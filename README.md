@@ -41,22 +41,22 @@ Spring 기반 애플리케이션의 **인증(Authentication)** 과 **인가(Auth
 
 ## 🔹 **Spring Security의 구조와 인증 과정**
 
-스프링 시큐리티(Spring Security)는 **서블릿 필터(Servlet Filter)** 기반의 인증 및 인가 프레임워크야. 이 시스템은 여러 개의 필터를 **필터 체인(Filter Chain)** 형태로 구성하여 보안 기능을 제공하지. 특히 인증(Authentication)과 인가(Authorization) 과정에서 이 필터들이 중요한 역할을 한다.
+Spring Security는 서블릿 필터(Servlet Filter) 기반의 인증 및 인가 프레임워크임. 이 시스템은 여러 개의 필터를 필터 체인(Filter Chain) 형태로 구성하여 보안 기능을 제공함. 특히 인증(Authentication)과 인가(Authorization) 과정에서 이 필터들이 중요한 역할을 함.
 
 ### 📌 **Spring Security에서 기본적인 인증 과정**
-우선, 소셜 로그인(OAuth 2.0)이 아닌 **기본적인 폼 로그인(Form Login)** 기준으로 설명할게.
+**기본적인 폼 로그인(Form Login)** 기준
 
 ### **1. 사용자가 로그인 요청을 보냄**
    - 사용자가 로그인 폼을 제출하면, `HttpServletRequest`를 통해 로그인 요청이 들어옴.
    - 이 요청에는 보통 **사용자 ID(Username)와 비밀번호(Password)**가 포함됨.
 
 ### **2. AuthenticationFilter가 요청을 가로챔**
-   - 스프링 시큐리티는 다양한 필터를 사용하지만, 기본적으로 로그인 요청을 처리하는 필터는 **`UsernamePasswordAuthenticationFilter`** 야.
-   - 이 필터가 로그인 요청을 가로채고, 사용자가 입력한 정보를 **`UsernamePasswordAuthenticationToken` 객체**로 변환해.
-   - **이 단계에서는 사용자의 인증이 완료되지 않은 상태(미검증)야.**
+   - 스프링 시큐리티는 다양한 필터를 사용하지만, 기본적으로 로그인 요청을 처리하는 필터는 **`UsernamePasswordAuthenticationFilter`**
+   - 이 필터가 로그인 요청을 가로채고, 사용자가 입력한 정보를 **`UsernamePasswordAuthenticationToken` 객체**로 변환
+   - **이 단계에서는 사용자의 인증이 완료되지 않은 상태(미검증).**
 
 ### **3. ProviderManager(AuthenticationManager 구현체)에 인증 요청 전달**
-   - `UsernamePasswordAuthenticationFilter`는 인증 처리를 직접 하지 않고, `ProviderManager`에게 인증 요청을 전달해.
+   - `UsernamePasswordAuthenticationFilter`는 인증 처리를 직접 하지 않고, `ProviderManager`에게 인증 요청을 전달
    - `ProviderManager`는 **여러 개의 `AuthenticationProvider`를 관리**하는 역할을 함.
    - 기본적으로 `DaoAuthenticationProvider`가 사용됨.
 
@@ -89,8 +89,7 @@ Spring 기반 애플리케이션의 **인증(Authentication)** 과 **인가(Auth
 
 ## 🔹 **Spring Security의 필터 체인 구조**
 
-스프링 시큐리티는 필터 기반의 보안 프레임워크이기 때문에 다양한 필터를 활용해 요청을 처리해.  
-기본적인 로그인 과정에서 사용되는 **필터들의 순서와 역할**을 정리해 볼게.
+스프링 시큐리티는 필터 기반의 보안 프레임워크이기 때문에 다양한 필터를 활용해 요청을 처리
 
 ### 📌 **Spring Security 기본 필터 목록**
 > 필터는 순차적으로 실행되며, 인증과 인가 과정을 담당하는 핵심 역할을 수행함.
