@@ -244,6 +244,114 @@ http.headers().xssProtection();
 
 ---
 
+## 🔐 보안에서 인증에 이용되는 토큰 정리
+
+보안에서 **토큰(Token)** 은 사용자의 인증 및 권한 부여에 사용되는 문자열 또는 데이터 구조입니다. 토큰을 이용하면 서버는 사용자의 신원을 지속적으로 확인하지 않고도 인증 상태를 유지할 수 있습니다.
+
+---
+
+## 📌 1. 토큰의 역할
+- 사용자의 **인증(Authentication)** 을 유지
+- **권한 부여(Authorization)** 를 통해 리소스 접근 제어
+- 세션을 저장하지 않고도 **무상태(Stateless) 인증** 가능
+- 쿠키 기반 인증의 단점을 보완하고, 확장성이 뛰어남
+
+---
+
+## 📌 2. 토큰의 종류
+### 1️⃣ **세션 토큰 (Session Token)**
+- **개념**: 로그인 시 서버가 생성하여 클라이언트에 전달하는 토큰
+- **저장 위치**: 서버의 세션 저장소 (DB, Redis 등)
+- **특징**:
+  - 서버에서 세션을 저장하고 관리해야 함 (Stateful)
+  - 보안이 강하지만 서버 부하 증가 가능
+  - 주로 **전통적인 웹 애플리케이션**에서 사용
+
+---
+
+### 2️⃣ **JWT (JSON Web Token)**
+- **개념**: 인증 정보를 JSON 형태로 인코딩하여 서명한 토큰
+- **구조**: `Header.Payload.Signature`
+- **저장 위치**: 클라이언트 측 (로컬 스토리지, 쿠키, 세션 스토리지)
+- **특징**:
+  - **서버에서 상태를 저장할 필요 없음 (Stateless)**
+  - 서명(Signature)으로 무결성 보장 (변조 감지 가능)
+  - 짧은 만료 시간 설정이 필수 (탈취 시 보안 위험)
+  - 자주 **OAuth 2.0, OpenID Connect, API 인증**에 사용됨
+- **예제**:
+  ```json
+  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.
+  eyJ1c2VySWQiOiIxMjM0NTYiLCJyb2xlIjoiYWRtaW4iLCJleHAiOjE2ODI2NjUyMDB9.
+  dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk
+  ```
+
+---
+
+### 3️⃣ **OAuth 액세스 토큰 (Access Token)**
+- **개념**: OAuth 2.0에서 사용자의 인증 후 API 접근을 위한 토큰
+- **저장 위치**: 클라이언트 (메모리, 로컬 스토리지 등)
+- **특징**:
+  - API 요청 시 포함하여 리소스에 접근 가능
+  - **만료 시간**이 짧음 (보통 몇 분~몇 시간)
+  - OAuth 2.0 인증 흐름에서 사용됨 (예: Google, Facebook 로그인)
+- **예제 (HTTP Authorization 헤더에 사용)**:
+  ```http
+  Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+  ```
+
+---
+
+### 4️⃣ **OAuth 리프레시 토큰 (Refresh Token)**
+- **개념**: 액세스 토큰이 만료되었을 때, 새 액세스 토큰을 받기 위한 토큰
+- **저장 위치**: **보안이 강화된 저장소** (DB, Secure Storage)
+- **특징**:
+  - 액세스 토큰보다 **수명이 길다**
+  - 탈취될 경우 보안 위험이 크므로 **안전한 저장** 필요
+  - 일반적으로 **백엔드에서 관리**하며, 주로 **쿠키(httpOnly)** 에 저장
+
+---
+
+## 📌 3. 토큰 사용 시 보안 고려사항
+✅ **토큰 저장 위치**  
+- 액세스 토큰: **메모리** 또는 **httpOnly 쿠키**
+- 리프레시 토큰: **보안 저장소** (DB, Secure Storage)
+
+✅ **토큰 유효 기간 관리**  
+- 액세스 토큰: **짧게 (5~30분)**
+- 리프레시 토큰: **길게 (7일~30일)**
+- 세션 토큰: **로그아웃 시 삭제**
+
+✅ **HTTPS 사용**  
+- 네트워크에서 **토큰 탈취 방지** (중간자 공격 방어)
+
+✅ **서명 검증**  
+- JWT는 서명을 검증하여 변조 여부 확인
+
+✅ **토큰 탈취 시 대응 방법**  
+- **단일 기기 세션 유지** (1개 이상의 로그인 방지)
+- **로그아웃 시 리프레시 토큰 폐기**
+- **IP, User-Agent 등 추가 확인**
+
+---
+
+## 📌 4. 토큰 비교 요약
+
+| 토큰 종류       | 저장 위치 | 특징 | 주 사용처 |
+|---------------|---------|-----|--------|
+| **세션 토큰** | 서버 (DB, Redis) | 상태 유지 필요 | 전통적인 웹 인증 |
+| **JWT** | 클라이언트 | 상태 저장 불필요, 서명 포함 | OAuth, OpenID, API 인증 |
+| **OAuth 액세스 토큰** | 클라이언트 | API 접근 인증 | OAuth 2.0, 외부 서비스 |
+| **OAuth 리프레시 토큰** | 서버 (DB) | 새 액세스 토큰 발급 | OAuth 장기 인증 |
+
+---
+
+## ✅ 결론
+- **웹 애플리케이션**: JWT or 세션 토큰
+- **OAuth 2.0 기반 API**: 액세스 토큰 + 리프레시 토큰
+- **보안 강화 필요**: httpOnly 쿠키, HTTPS, 짧은 유효 기간 설정
+
+-------
+
 ## 🔑 인증 및 인가 흐름
 
 ### 🔐 **인증 방식 요약**
@@ -285,3 +393,7 @@ http.headers().xssProtection();
 
 ---
 
+
+## 📌 참고 및 출처
+- 📖 [Modern API Development with Spring 6 and Spring Boot 3](https://github.com/PacktPublishing/Modern-API-Development-with-Spring-6-and-Spring-Boot-3)  
+- 🔗 [SecurityFilterChain 종류 및 설명](https://docs.spring.io/spring-security/reference/servlet/architecture.html#servlet-security-filters)  
