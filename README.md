@@ -246,6 +246,23 @@ http.headers().xssProtection();
 
 ## 🔑 인증 및 인가 흐름
 
+### 🔐 **인증 방식 요약**
+
+| 인증 방식        | 설명 | 특징 | 주 사용처 |
+|---------------|-----|-----|--------|
+| **Spring Security** | Spring 기반의 보안 프레임워크 | 인증, 인가 처리 제공 | Spring 기반 웹 애플리케이션 |
+| **OAuth 2.0** | 토큰 기반 인증 방식 | 액세스 토큰 & 리프레시 토큰 사용 | 소셜 로그인, API 인증 |
+| **JWT (JSON Web Token)** | 무상태 인증 토큰 | 자체 서명 포함, 서버 상태 저장 불필요 | REST API, MSA 인증 |
+| **Session 인증** | 서버 측에서 세션 저장 | 세션 ID를 쿠키로 저장, 서버 상태 유지 필요 | 전통적인 웹 애플리케이션 |
+
+**📌 요약**
+- **Spring Security**: 인증 및 인가를 처리하는 프레임워크  
+- **OAuth 2.0**: 액세스 토큰을 이용한 인증 방식  
+- **JWT**: 자체 서명이 포함된 토큰 기반 인증 (OAuth 2.0에서도 사용 가능)  
+- **Session 인증**: 서버에 세션을 저장하는 방식 (Stateful)
+
+각 방식은 **Spring Security에서 조합하여 사용 가능**하며, OAuth 2.0 및 JWT는 RESTful API 인증에 자주 활용됩니다! 🚀
+
 ### 1️⃣ **Spring Security만 사용한 경우**
 1. 사용자가 로그인 요청 (ID/PW)
 2. `UserDetailsService`가 사용자 정보 조회
