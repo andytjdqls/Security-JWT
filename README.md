@@ -284,3 +284,4 @@ http.headers().xssProtection();
 5. 검증된 경우 `SecurityContextHolder`에 사용자 정보 저장 후 요청 처리
 
 ---
+
