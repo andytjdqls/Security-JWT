@@ -37,6 +37,114 @@ Spring 기반 애플리케이션의 **인증(Authentication)** 과 **인가(Auth
   - **Pre-filter(프리 필터)** → 요청이 컨트롤러로 전달되기 전에 적용 (예: 인증 필터, CORS 필터)  
   - **Post-filter(포스트 필터)** → 컨트롤러에서 처리된 응답이 반환되기 전에 적용 (예: 응답 데이터 필터링, 접근 권한 검사)  
 
+Spring Security의 기본적인 인증 과정과 필터 체인 구조를 자세히 정리해 줄게. 특히 폼 로그인(Form Login) 방식을 중심으로 설명하고, 각 단계에서 어떤 일이 발생하는지 세부적으로 살펴볼 거야.
+
+---
+
+## 🔹 **Spring Security의 구조와 인증 과정**
+
+스프링 시큐리티(Spring Security)는 **서블릿 필터(Servlet Filter)** 기반의 인증 및 인가 프레임워크야. 이 시스템은 여러 개의 필터를 **필터 체인(Filter Chain)** 형태로 구성하여 보안 기능을 제공하지. 특히 인증(Authentication)과 인가(Authorization) 과정에서 이 필터들이 중요한 역할을 한다.
+
+### 📌 **Spring Security에서 기본적인 인증 과정**
+우선, 소셜 로그인(OAuth 2.0)이 아닌 **기본적인 폼 로그인(Form Login)** 기준으로 설명할게.
+
+### **1. 사용자가 로그인 요청을 보냄**
+   - 사용자가 로그인 폼을 제출하면, `HttpServletRequest`를 통해 로그인 요청이 들어옴.
+   - 이 요청에는 보통 **사용자 ID(Username)와 비밀번호(Password)**가 포함됨.
+
+### **2. AuthenticationFilter가 요청을 가로챔**
+   - 스프링 시큐리티는 다양한 필터를 사용하지만, 기본적으로 로그인 요청을 처리하는 필터는 **`UsernamePasswordAuthenticationFilter`** 야.
+   - 이 필터가 로그인 요청을 가로채고, 사용자가 입력한 정보를 **`UsernamePasswordAuthenticationToken` 객체**로 변환해.
+   - **이 단계에서는 사용자의 인증이 완료되지 않은 상태(미검증)야.**
+
+### **3. ProviderManager(AuthenticationManager 구현체)에 인증 요청 전달**
+   - `UsernamePasswordAuthenticationFilter`는 인증 처리를 직접 하지 않고, `ProviderManager`에게 인증 요청을 전달해.
+   - `ProviderManager`는 **여러 개의 `AuthenticationProvider`를 관리**하는 역할을 함.
+   - 기본적으로 `DaoAuthenticationProvider`가 사용됨.
+
+### **4. AuthenticationProvider가 인증 처리**
+   - `AuthenticationProvider`는 사용자가 입력한 ID와 비밀번호를 검증하는 역할을 함.
+   - 이 과정에서 **실제 DB에서 사용자 정보를 가져와야 하므로** `UserDetailsService`를 호출함.
+
+### **5. UserDetailsService가 DB에서 사용자 정보 조회**
+   - `UserDetailsService` 인터페이스를 구현한 클래스에서 `loadUserByUsername(username)` 메서드를 통해 DB에서 사용자의 정보를 가져옴.
+   - 이때 조회된 사용자 정보는 `UserDetails` 객체로 반환됨.
+
+### **6. UserDetails 객체와 입력된 정보 비교**
+   - `AuthenticationProvider`는 `UserDetails` 객체를 이용해 사용자가 입력한 정보와 DB에 저장된 정보를 비교해.
+   - 만약 비밀번호가 일치하면 인증이 완료됨.
+   - 스프링 시큐리티는 내부적으로 `PasswordEncoder`(예: `BCryptPasswordEncoder`)를 사용해 비밀번호를 암호화하고 비교함.
+
+### **7. 인증 성공 시 Authentication 객체 반환**
+   - 인증이 성공하면 `AuthenticationProvider`는 인증된 정보를 담은 `Authentication` 객체를 생성하여 반환함.
+   - 이 객체는 사용자 정보, 권한(Role) 등을 포함하고 있음.
+
+### **8. SecurityContext에 Authentication 저장**
+   - `SecurityContextHolder`를 통해 `SecurityContext`에 `Authentication` 객체가 저장됨.
+   - 이후의 모든 요청에서는 이 정보를 기반으로 사용자의 인증 여부를 판단할 수 있음.
+
+### **9. 로그인 성공 후 세션에 저장**
+   - 기본적으로 스프링 시큐리티는 로그인 성공 후 `SessionAuthenticationStrategy`를 통해 세션을 생성하고, `HttpSession`에 `SecurityContext`를 저장함.
+   - 이를 통해 사용자는 다시 로그인하지 않아도 세션이 유지됨.
+
+---
+
+## 🔹 **Spring Security의 필터 체인 구조**
+
+스프링 시큐리티는 필터 기반의 보안 프레임워크이기 때문에 다양한 필터를 활용해 요청을 처리해.  
+기본적인 로그인 과정에서 사용되는 **필터들의 순서와 역할**을 정리해 볼게.
+
+### 📌 **Spring Security 기본 필터 목록**
+> 필터는 순차적으로 실행되며, 인증과 인가 과정을 담당하는 핵심 역할을 수행함.
+
+1. **SecurityContextPersistenceFilter**
+   - 요청이 들어올 때 `SecurityContext`를 로드하고, 요청이 끝나면 저장함.
+   - 로그인 후 사용자의 `Authentication` 정보를 세션에 유지하는 역할.
+
+2. **UsernamePasswordAuthenticationFilter**
+   - 로그인 요청이 들어오면, 사용자 정보를 추출하고 `UsernamePasswordAuthenticationToken` 객체를 생성.
+   - 이 객체를 `AuthenticationManager`에 전달하여 인증을 수행함.
+
+3. **DefaultLoginPageGeneratingFilter**
+   - 기본 로그인 페이지를 제공하는 필터.
+   - 커스텀 로그인 페이지를 설정하지 않으면, 이 필터가 기본 폼을 제공함.
+
+4. **DefaultLogoutPageGeneratingFilter**
+   - 기본 로그아웃 페이지를 제공하는 필터.
+
+5. **BasicAuthenticationFilter**
+   - HTTP Basic 인증을 처리하는 필터.
+   - `Authorization: Basic <Base64-encoded-credentials>` 헤더를 사용하여 인증 수행.
+
+6. **FilterSecurityInterceptor**
+   - 인증된 사용자의 접근 권한(Authorization)을 검사하는 필터.
+   - 요청한 리소스(URL, 메서드 등)에 대한 접근 권한이 있는지 체크함.
+
+---
+
+## 🔹 **OAuth2.0 로그인 시 필터 차이점**
+> 만약 **OAuth2.0 소셜 로그인(Google, Kakao, Naver 등)**을 사용하면 `UsernamePasswordAuthenticationFilter` 대신 **`OAuth2LoginAuthenticationFilter`**가 호출됨.
+
+- 두 필터의 공통점:  
+  - 둘 다 `AbstractAuthenticationProcessingFilter`의 하위 클래스임.
+  - 로그인 요청을 가로채고 `AuthenticationManager`에게 인증을 요청하는 역할을 함.
+
+- 차이점:  
+  - `UsernamePasswordAuthenticationFilter`는 **폼 기반 로그인 (ID/PW)** 처리.
+  - `OAuth2LoginAuthenticationFilter`는 **소셜 로그인 (OAuth2.0)**을 처리.
+
+---
+
+## 🔹 **정리**
+1. **Spring Security는 필터 체인 구조**로 동작하며, 요청이 들어오면 여러 필터를 거쳐 인증과 인가가 이루어진다.
+2. **기본 폼 로그인(Form Login) 과정**
+   - 사용자가 로그인하면 `UsernamePasswordAuthenticationFilter`가 요청을 가로채고, `AuthenticationManager`에 인증을 위임한다.
+   - `AuthenticationProvider`는 `UserDetailsService`를 호출하여 DB에서 사용자 정보를 가져오고, 비밀번호 검증을 수행한다.
+   - 인증이 성공하면 `SecurityContextHolder`에 `Authentication` 객체를 저장한다.
+3. **OAuth2.0 로그인을 사용할 경우** `OAuth2LoginAuthenticationFilter`가 대신 동작하며, 이를 통해 외부 인증 서버(Google, Kakao 등)와 연동한다.
+
+---
+
 🔹 **보안 필터 주요 예제**  
 - `@PreAuthorize("hasRole('ADMIN')")` → 요청 전에 특정 권한을 요구하는 필터  
 - `@PostAuthorize("returnObject.owner == authentication.name")` → 응답 반환 후 특정 조건 검사  
