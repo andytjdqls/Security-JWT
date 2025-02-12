@@ -12,7 +12,7 @@ Chapter 6의 내용을 개인적으로 정리하고 요약한 문서입니다.
 ### 1️⃣ Spring Security 개요
 🔹 **Spring Security 란?**  
 Spring 기반 애플리케이션의 **인증(Authentication)** 과 **인가(Authorization)** 를 관리하는 보안 프레임워크입니다.  
-🔖 [_Boilerplate Code_](#boilerplatecode)를 직접 작성하지 않고도 **표준화된 보안 기능(인증, 인가, 세션 관리, CSRF 보호 등)을 손쉽게 구현할 수 있도록 지원하는 라이브러리 기반 프레임워크**입니다.  
+🔖 [_Boilerplate Code_](#-boilerplatecode)를 직접 작성하지 않고도 **표준화된 보안 기능(인증, 인가, 세션 관리, CSRF 보호 등)을 손쉽게 구현할 수 있도록 지원하는 라이브러리 기반 프레임워크**입니다.  
 ➡ **즉, 보안 관련 로직을 직접 구현할 필요 없이, Spring Security가 제공하는 기능을 활용하여 안전한 애플리케이션을 개발할 수 있습니다.**  
 
 🔹 **Spring Security의 핵심 기능**  
