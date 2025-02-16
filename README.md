@@ -1,175 +1,295 @@
 # 🌐 Spring Security & JWT 정리
 
 ## 🎯 목적
-📘 [Modern API Development with Spring 6 and Spring Boot 3](https://github.com/PacktPublishing/Modern-API-Development-with-Spring-6-and-Spring-Boot-3/tree/main/Chapter06) 를 공부하며,  
-Chapter 6의 내용을 개인적으로 정리하고 요약한 문서입니다.
+이 문서는 **Spring Security와 JWT**를 학습하며 정리한 내용을 담고 있습니다.
 
----
-### 1️⃣ Spring Security 개요
+## 📌 1. Spring Security 개요
 
-🔹 **Spring Security 란?**  
+### ✅**1.1 Spring Security란?**
 Spring 기반 애플리케이션의 **인증(Authentication)** 과 **인가(Authorization)** 를 관리하는 보안 프레임워크입니다.  
 🔖 [_Boilerplate Code_](#-boilerplatecode)를 직접 작성하지 않고도 **표준화된 보안 기능(인증, 인가, 세션 관리, CSRF 보호 등)을 손쉽게 구현할 수 있도록 지원하는 라이브러리 기반 프레임워크**입니다.  
+
 ➡ **즉, 보안 관련 로직을 직접 구현할 필요 없이, Spring Security가 제공하는 기능을 활용하여 안전한 애플리케이션을 개발할 수 있습니다.**  
 
-#### 🔹 주요 기능
-✅ **인증(Authentication)** → 사용자가 누구인지 확인  
-✅ **인가(Authorization)** → 사용자가 특정 리소스에 접근할 수 있는지 결정  
-✅ **보안 필터(Security Filters)** → 요청과 응답을 가로채 보안 검사 수행  
-✅ **비밀번호 암호화(BCrypt)** → 안전한 비밀번호 저장  
-✅ **CSRF/XSRF 보호** → CSRF 공격 방지  
+### **주요 기능:**
+- ✅ **인증(Authentication)**: 사용자가 누구인지 확인
+- ✅ **인가(Authorization)**: 사용자의 접근 권한 결정
+- ✅ **보안 필터(Security Filters)**: 요청 및 응답에 대한 보안 검사 수행
+- ✅ **비밀번호 암호화(BCrypt)**: 안전한 비밀번호 저장
+- ✅ **CSRF/XSRF 보호**: CSRF 공격 방지
 
-#### 🔹 SecurityFilterChain의 역할
-- 요청을 가로채어 **인증(Authentication)과 인가(Authorization)** 수행
-- **Pre-filter(프리 필터)** → 요청이 컨트롤러로 전달되기 전에 적용  
-- **Post-filter(포스트 필터)** → 응답이 반환되기 전에 적용  
+**Spring Security의 라이브러리 및 Gradle 설정**
+   - 내용 입력하기
 
-🔹 **Spring Security의 라이브러리 및 Gradle 설정** 
+### ✅1.2 Spring Security 요청 처리 흐름
+
+1. 클라이언트 요청 → `DispatcherServlet` → `Security Filter` → 컨트롤러 → 서비스 → DB
+2. 사용자가 로그인 정보를 입력 → 보안 시스템(Spring Security)이 이를 확인 → 로그인 성공 후 사용자 정보 조회 → 접근 권한 결정
+3. `SecurityFilterChain`이 요청을 가로채어 인증 및 인가 수행
+
+**SecurityFilterChain의 역할:**
+- **Pre-filter**: 요청이 컨트롤러로 전달되기 전에 적용, 보안 검사를 수행하는 필터
+- **Post-filter**: 컨트롤러에서 응답이 반환되기 전에 보안 정책을 적용하는 필터.
+
+## 📌 2. Spring Security 인증 과정
+
+Spring Security는 여러 개의 **필터 체인(Filter Chain)**을 통해 보안 기능을 제공합니다.
+
+### ✅2.1 기본적인 인증 과정
+1. **사용자가 로그인 요청을 보냄**
+   - 로그인 폼 제출 → `HttpServletRequest`를 통해 사용자 정보(ID, PW) 전달
+
+2. **`UsernamePasswordAuthenticationFilter`가 요청을 가로챔**
+   - `UsernamePasswordAuthenticationToken` 객체로 변환
+   - `ProviderManager`에게 인증 요청 전달
+
+3. **`AuthenticationProvider`가 인증 처리**
+   - `ProviderManager`가 적절한 `AuthenticationProvider`를 찾아 인증 요청을 전달
+   - `UserDetailsService`를 통해 DB에서 사용자 정보 조회
+   - `PasswordEncoder`(BCrypt)로 비밀번호 검증
+   - 인증 성공 시 `Authentication` 객체 반환
+
+4. **SecurityContext에 Authentication 저장**
+   - `SecurityContextHolder`에 인증된 사용자 정보 저장 → 이후 요청에서 인증 상태 유지
+
+### ✅2.2 Spring Security 필터 체인 구조
+**Spring Security는 여러 개의 필터를 통해 보안 기능을 적용합니다.**
+
+ No  | 필터명 | 역할 |
+|-----|----------------------------------|-------------------------------------------------|
+| 1   | `SecurityContextPersistenceFilter` | SecurityContext 객체를 생성, 저장, 조회 (요청 시작 시 복원, 응답 시 저장) |
+| 2   | `UsernamePasswordAuthenticationFilter` | ID/PW 기반 로그인 요청을 처리하여 AuthenticationManager에 인증 요청 |
+| 3   | `BasicAuthenticationFilter` | HTTP Basic 인증 방식 처리 (Authorization: Basic {credentials}) |
+| 4   | `BearerTokenAuthenticationFilter` | Authorization: Bearer {token} 헤더를 통한 JWT 및 OAuth2 토큰 인증 |
+| 5   | `ExceptionTranslationFilter` | 인증 및 권한 관련 예외 (AccessDeniedException, AuthenticationException) 처리 |
+| 6   | `FilterSecurityInterceptor` | 인증된 사용자의 접근 권한을 검사 (AccessDecisionManager와 함께 동작) |
+| 7 |  `OAuth2LoginAuthenticationFilter` | OAuth2 로그인 처리 |
+
+<br>
+
+---
+
+<br>
+
+### ✅2.3 인증 방식에 따른 Spring Security 필터 체인 구조의 변화
+
+#### **✅1. 기존 폼 로그인 (Session 기반 인증)**
+- 사용자가 **ID/PW**를 입력하여 로그인하면, `UsernamePasswordAuthenticationFilter`가 작동.
+- 인증이 성공하면 **세션(Session)에 Authentication 정보**를 저장하여 관리.
+
+**필터 체인 흐름**
+```
+1. SecurityContextPersistenceFilter (SecurityContext 관리)
+2. UsernamePasswordAuthenticationFilter (폼 로그인 처리)
+3. DefaultLoginPageGeneratingFilter (기본 로그인 페이지 제공 - 필요 시)
+4. BasicAuthenticationFilter (Basic Auth 지원)
+5. RequestCacheAwareFilter (요청 캐시 처리)
+6. SecurityContextHolderFilter (SecurityContext 설정)
+7. AuthorizationFilter (인가 처리)
+```
+
+---
+
+#### **✅2. OAuth2.0 로그인 (OAuth2.0 기반 인증)**
+- 사용자가 **OAuth2.0 Provider(Google, Kakao 등)**를 통해 로그인하면, `OAuth2LoginAuthenticationFilter`가 작동.
+- OAuth2 로그인 후, **SecurityContext에 Authentication 객체를 저장**하여 관리.
+
+**필터 체인 흐름**
+```
+1. SecurityContextPersistenceFilter
+2. OAuth2LoginAuthenticationFilter (OAuth2.0 인증 처리)
+3. RequestCacheAwareFilter
+4. SecurityContextHolderFilter
+5. AuthorizationFilter
+```
+
+---
+
+#### **✅3. JWT 기반 인증**
+- **Stateless 방식**이므로 **세션을 사용하지 않음**.
+- 로그인 시, `UsernamePasswordAuthenticationFilter`에서 **JWT를 생성하여 응답**.
+- 이후 요청 시, `JwtAuthenticationFilter`(커스텀 필터)가 동작하여 **JWT를 검증 및 인증 처리**.
+
+**필터 체인 흐름**
+```
+1. SecurityContextPersistenceFilter
+2. JwtAuthenticationFilter (JWT 검증 및 SecurityContext 설정)
+3. RequestCacheAwareFilter
+4. SecurityContextHolderFilter
+5. AuthorizationFilter
+```
+
+🔹 **핵심 차이점**
+- **기존 폼 로그인 → `UsernamePasswordAuthenticationFilter`**
+- **OAuth2.0 로그인 → `OAuth2LoginAuthenticationFilter`**
+- **JWT 인증 → 커스텀 필터 (`JwtAuthenticationFilter`) 추가하여 인증 처리**
+
+---
+
+#### **✅ JWT를 적용할 때의 주요 변경 사항**
+1. **세션을 사용하지 않으므로, SecurityContextPersistenceFilter 설정 변경**
+   ```java
+   httpSecurity
+       .sessionManagement(session -> session
+           .sessionCreationPolicy(SessionCreationPolicy.STATELESS) // 세션 사용 안함
+       )
+   ```
+   
+2. **JWT 인증을 위한 필터 추가 (`JwtAuthenticationFilter`)**
+   ```java
+   httpSecurity
+       .addFilterBefore(new JwtAuthenticationFilter(jwtProvider), UsernamePasswordAuthenticationFilter.class);
+   ```
+
+3. **기본 로그인 방식 제거**
+   ```java
+   httpSecurity
+       .formLogin(AbstractHttpConfigurer::disable)
+       .httpBasic(AbstractHttpConfigurer::disable);
+   ```
+
+---
+
+### ✅ **정리**
+| 인증 방식  | 주요 필터 | 필터 목적 |
+|------------|------------------------------|----------------------|
+| **폼 로그인** | `UsernamePasswordAuthenticationFilter` | ID/PW 인증 및 세션 저장 |
+| **OAuth2.0 로그인** | `OAuth2LoginAuthenticationFilter` | 소셜 로그인 처리 |
+| **JWT 인증** | `JwtAuthenticationFilter` (커스텀) | JWT 검증 및 인증 |
+
+✔️ **JWT 사용 시에는 UsernamePasswordAuthenticationFilter를 그대로 사용하여 JWT 발급 후, 이후 요청에서 JwtAuthenticationFilter를 통해 JWT 검증을 수행**하는 방식으로 변경됨.
+
+---
+
+# **🔐 보안에서 인증에 이용되는 인증 방식 정리**  
+
+## **📌 1. 쿠키(Cookie)**
+쿠키는 **사용자의 인증 정보를 브라우저에 저장하여 로그인 상태를 유지하는 방식**입니다.
+
+---
+
+### **✅ 1.1 쿠키(Cookie)란?**
+- 클라이언트(브라우저)에 저장되는 **작은 데이터 조각**  
+- 서버가 클라이언트에 응답할 때 **Set-Cookie** 헤더를 통해 생성  
+- 이후 요청마다 **쿠키를 자동으로 포함하여 서버에 전송**  
+- **주로 세션 ID나 JWT를 저장하는 용도로 사용됨**  
+
+---
+
+### **✅ 1.2 쿠키의 특징**
+✅ **자동 전송:** 브라우저가 요청마다 자동으로 쿠키를 서버에 전송  
+✅ **도메인 기반:** 특정 도메인에서만 사용 가능 (`SameSite` 정책으로 보안 강화 가능)  
+✅ **httpOnly 옵션:** XSS 공격 방지를 위해 **JavaScript에서 접근 불가능하도록 설정 가능**  
+✅ **보안 설정:** `Secure` 속성을 설정하면 **HTTPS에서만 쿠키 전송 가능**  
+
+---
+
+### **✅ 1.3 쿠키의 예제 (Set-Cookie 헤더)**
+```http
+Set-Cookie: sessionId=abc123; HttpOnly; Secure; SameSite=Strict
+```
+- **sessionId=abc123** → 세션 ID 저장  
+- **HttpOnly** → JavaScript에서 접근 불가능 (XSS 방어)  
+- **Secure** → HTTPS에서만 쿠키 전송  
+- **SameSite=Strict** → CSRF 공격 방지 (타 사이트 요청에서 쿠키 자동 전송 차단)  
+
+---
+
+### **✅ 1.4 쿠키 기반 인증의 흐름**
+1️⃣ 사용자가 로그인 요청 (`/login`)  
+2️⃣ 서버가 **사용자를 인증 후 쿠키를 생성**하여 응답  
+3️⃣ 클라이언트(브라우저)가 쿠키를 저장  
+4️⃣ 이후 요청마다 **쿠키를 포함하여 서버에 자동 전송**  
+5️⃣ 서버가 쿠키를 확인하고 사용자 인증 수행  
+
+---
+
+## **📌 2. 세션(Session) 기반 인증**
+세션(Session)은 **사용자의 로그인 정보를 서버에서 관리하는 방식**입니다.
+
+---
+
+### **✅ 2.1 세션(Session)이란?**
+- 서버가 **사용자의 로그인 상태를 유지하기 위해 생성하는 데이터**  
+- 클라이언트는 `sessionId` 쿠키를 이용하여 세션을 식별  
+- **세션 정보는 서버에서 관리되며, 클라이언트에는 세션 ID만 저장**  
+- 보통 **Redis, DB, In-Memory Store(예: HttpSession)** 등을 이용해 저장  
+
+---
+
+### **✅ 2.2 세션의 특징**
+✅ **서버에서 사용자 상태를 관리** → 무결성이 높음  
+✅ **쿠키에는 sessionId만 저장** → 보안성이 더 높음  
+✅ **클라이언트가 쿠키를 삭제해도 서버에서 로그아웃 처리 가능**  
+✅ **세션 기반 인증의 서버 부하 증가 원인**
+- 서버가 **각 사용자의 세션을 유지**해야 하기 때문에, 사용자가 많아질수록 메모리 사용량이 증가함.
+- 여러 서버(멀티 노드)에서 동작하는 경우, **세션 정보를 공유하는 문제** 발생 (예: Redis, DB 활용 필요).
+- 따라서 **확장성(Scalability)**이 필요한 서비스에서는 세션 기반 인증보다는 JWT 기반 인증이 선호됨.
  
-### 2️⃣ Spring Security 요청 처리 흐름  
-🔹 **DispatcherServlet과 요청 흐름**  
-- 클라이언트 → DispatcherServlet → Security Filter → 컨트롤러 → 서비스 → DB  
-- 사용자가 로그인 정보를 입력 → 보안 시스템(Spring Security)이 이를 확인 → 로그인 성공 후 사용자의 정보를 DB에서 가져옴 → 해당 정보에 따라 접근 권한을 결정
-
-🔹 **SecurityFilterChain의 역할 및 필터 흐름**  
-- SecurityFilterChain이 요청을 가로채고 **인증(Authentication)과 인가(Authorization)을 수행**  
-- `SecurityFilterChain` 내부에서 동작하는 필터:
-  - **Pre-filter(프리 필터)** → 요청이 컨트롤러로 전달되기 전에 적용 (예: 인증 필터, CORS 필터)  
-  - **Post-filter(포스트 필터)** → 컨트롤러에서 처리된 응답이 반환되기 전에 적용 (예: 응답 데이터 필터링, 접근 권한 검사)  
 
 ---
 
-## 🔹 **Spring Security의 구조와 인증 과정**
-
-Spring Security는 서블릿 필터(Servlet Filter) 기반의 인증 및 인가 프레임워크임. 이 시스템은 여러 개의 필터를 필터 체인(Filter Chain) 형태로 구성하여 보안 기능을 제공함. 특히 인증(Authentication)과 인가(Authorization) 과정에서 이 필터들이 중요한 역할을 함.
-
-### 📌 **Spring Security에서 기본적인 인증 과정**
-**기본적인 폼 로그인(Form Login)** 기준
-
-### **1. 사용자가 로그인 요청을 보냄**
-   - 사용자가 로그인 폼을 제출하면, `HttpServletRequest`를 통해 로그인 요청이 들어옴.
-   - 이 요청에는 보통 **사용자 ID(Username)와 비밀번호(Password)**가 포함됨.
-
-### **2. AuthenticationFilter가 요청을 가로챔**
-   - 스프링 시큐리티는 다양한 필터를 사용하지만, 기본적으로 로그인 요청을 처리하는 필터는 **`UsernamePasswordAuthenticationFilter`**
-   - 이 필터가 로그인 요청을 가로채고, 사용자가 입력한 정보를 **`UsernamePasswordAuthenticationToken` 객체**로 변환
-   - **이 단계에서는 사용자의 인증이 완료되지 않은 상태(미검증).**
-
-### **3. ProviderManager(AuthenticationManager 구현체)에 인증 요청 전달**
-   - `UsernamePasswordAuthenticationFilter`는 인증 처리를 직접 하지 않고, `ProviderManager`에게 인증 요청을 전달
-   - `ProviderManager`는 **여러 개의 `AuthenticationProvider`를 관리**하는 역할을 함.
-   - 기본적으로 `DaoAuthenticationProvider`가 사용됨.
-
-### **4. AuthenticationProvider가 인증 처리**
-   - `AuthenticationProvider`는 사용자가 입력한 ID와 비밀번호를 검증하는 역할을 함.
-   - 이 과정에서 **실제 DB에서 사용자 정보를 가져와야 하므로** `UserDetailsService`를 호출함.
-
-### **5. UserDetailsService가 DB에서 사용자 정보 조회**
-   - `UserDetailsService` 인터페이스를 구현한 클래스에서 `loadUserByUsername(username)` 메서드를 통해 DB에서 사용자의 정보를 가져옴.
-   - 이때 조회된 사용자 정보는 `UserDetails` 객체로 반환됨.
-
-### **6. UserDetails 객체와 입력된 정보 비교**
-   - `AuthenticationProvider`는 `UserDetails` 객체를 이용해 사용자가 입력한 정보와 DB에 저장된 정보를 비교해.
-   - 만약 비밀번호가 일치하면 인증이 완료됨.
-   - 스프링 시큐리티는 내부적으로 `PasswordEncoder`(예: `BCryptPasswordEncoder`)를 사용해 비밀번호를 암호화하고 비교함.
-
-### **7. 인증 성공 시 Authentication 객체 반환**
-   - 인증이 성공하면 `AuthenticationProvider`는 인증된 정보를 담은 `Authentication` 객체를 생성하여 반환함.
-   - 이 객체는 사용자 정보, 권한(Role) 등을 포함하고 있음.
-
-### **8. SecurityContext에 Authentication 저장**
-   - `SecurityContextHolder`를 통해 `SecurityContext`에 `Authentication` 객체가 저장됨.
-   - 이후의 모든 요청에서는 이 정보를 기반으로 사용자의 인증 여부를 판단할 수 있음.
-
-### **9. 로그인 성공 후 세션에 저장**
-   - 기본적으로 스프링 시큐리티는 로그인 성공 후 `SessionAuthenticationStrategy`를 통해 세션을 생성하고, `HttpSession`에 `SecurityContext`를 저장함.
-   - 이를 통해 사용자는 다시 로그인하지 않아도 세션이 유지됨.
+### **✅ 2.3 세션 기반 인증의 흐름**
+1️⃣ 사용자가 로그인 요청 (`/login`)  
+2️⃣ 서버가 **사용자를 인증 후 세션 생성 (sessionId 발급)**  
+3️⃣ **sessionId를 쿠키에 담아 클라이언트에 전달**  
+4️⃣ 클라이언트는 이후 요청마다 **sessionId 쿠키를 자동으로 포함**  
+5️⃣ 서버는 **sessionId를 확인하여 로그인 상태 유지**  
 
 ---
 
-## 🔹 **Spring Security의 필터 체인 구조**
-
-스프링 시큐리티는 필터 기반의 보안 프레임워크이기 때문에 다양한 필터를 활용해 요청을 처리
-
-### 📌 **Spring Security 기본 필터 목록**
-> 필터는 순차적으로 실행되며, 인증과 인가 과정을 담당하는 핵심 역할을 수행함.
-
-1. **SecurityContextPersistenceFilter**
-   - 요청이 들어올 때 `SecurityContext`를 로드하고, 요청이 끝나면 저장함.
-   - 로그인 후 사용자의 `Authentication` 정보를 세션에 유지하는 역할.
-
-2. **UsernamePasswordAuthenticationFilter**
-   - 로그인 요청이 들어오면, 사용자 정보를 추출하고 `UsernamePasswordAuthenticationToken` 객체를 생성.
-   - 이 객체를 `AuthenticationManager`에 전달하여 인증을 수행함.
-
-3. **DefaultLoginPageGeneratingFilter**
-   - 기본 로그인 페이지를 제공하는 필터.
-   - 커스텀 로그인 페이지를 설정하지 않으면, 이 필터가 기본 폼을 제공함.
-
-4. **DefaultLogoutPageGeneratingFilter**
-   - 기본 로그아웃 페이지를 제공하는 필터.
-
-5. **BasicAuthenticationFilter**
-   - HTTP Basic 인증을 처리하는 필터.
-   - `Authorization: Basic <Base64-encoded-credentials>` 헤더를 사용하여 인증 수행.
-
-6. **FilterSecurityInterceptor**
-   - 인증된 사용자의 접근 권한(Authorization)을 검사하는 필터.
-   - 요청한 리소스(URL, 메서드 등)에 대한 접근 권한이 있는지 체크함.
+### **✅ 2.4 세션과 쿠키의 관계**
+- **쿠키는 클라이언트 측에서 세션 ID를 저장하는 용도로 사용됨**  
+- 서버에서 세션을 생성하면 **sessionId가 쿠키에 저장**됨  
+- 이후 요청마다 **sessionId가 자동 전송**되어 사용자를 인증함  
 
 ---
 
-## 🔹 **OAuth2.0 로그인 시 필터 차이점**
-> 만약 **OAuth2.0 소셜 로그인(Google, Kakao, Naver 등)**을 사용하면 `UsernamePasswordAuthenticationFilter` 대신 **`OAuth2LoginAuthenticationFilter`**가 호출됨.
 
-- 두 필터의 공통점:  
-  - 둘 다 `AbstractAuthenticationProcessingFilter`의 하위 클래스임.
-  - 로그인 요청을 가로채고 `AuthenticationManager`에게 인증을 요청하는 역할을 함.
+## **📌3. 토큰 기반 인증**  
 
-- 차이점:  
-  - `UsernamePasswordAuthenticationFilter`는 **폼 기반 로그인 (ID/PW)** 처리.
-  - `OAuth2LoginAuthenticationFilter`는 **소셜 로그인 (OAuth2.0)**을 처리.
+### **✅ 토큰 기반 인증이란?**  
+- **서버가 사용자의 인증 상태를 유지하는 방법 중 하나**  
+- 기존 **세션 기반 인증과 달리, 서버가 상태(세션)를 유지할 필요 없음 (Stateless)**  
+- 일반적으로 **JWT (JSON Web Token) 방식이 가장 많이 사용됨**  
+- **OAuth 2.0, OpenID Connect, API 인증 등에 널리 활용됨**  
 
----
-
-## 🔹 **정리**
-1. **Spring Security는 필터 체인 구조**로 동작하며, 요청이 들어오면 여러 필터를 거쳐 인증과 인가가 이루어진다.
-2. **기본 폼 로그인(Form Login) 과정**
-   - 사용자가 로그인하면 `UsernamePasswordAuthenticationFilter`가 요청을 가로채고, `AuthenticationManager`에 인증을 위임한다.
-   - `AuthenticationProvider`는 `UserDetailsService`를 호출하여 DB에서 사용자 정보를 가져오고, 비밀번호 검증을 수행한다.
-   - 인증이 성공하면 `SecurityContextHolder`에 `Authentication` 객체를 저장한다.
-3. **OAuth2.0 로그인을 사용할 경우** `OAuth2LoginAuthenticationFilter`가 대신 동작하며, 이를 통해 외부 인증 서버(Google, Kakao 등)와 연동한다.
+### **✅ 토큰 기반 인증의 특징**  
+| 항목 | 설명 |
+|------|------|
+| **서버 부담** | 서버가 세션을 저장하지 않으므로 **확장성이 뛰어남** |
+| **보안성** | **서명(Signature) 검증을 통해 변조 방지** 가능 |
+| **단점** | 토큰 탈취 시 보안 위협 (짧은 만료 시간 설정 필수) |
 
 ---
 
-🔹 **보안 필터 주요 예제**  
-- `@PreAuthorize("hasRole('ADMIN')")` → 요청 전에 특정 권한을 요구하는 필터  
-- `@PostAuthorize("returnObject.owner == authentication.name")` → 응답 반환 후 특정 조건 검사  
-- `@PreFilter("filterObject.isActive")` → 리스트에서 특정 조건을 만족하는 항목만 필터링  
-- `@PostFilter("filterObject.owner == authentication.name")` → 응답으로 전달될 데이터 필터링
+### **✅ 토큰 기반 인증의 유형**
+- **JWT (JSON Web Token):** 클라이언트에서 직접 저장, 검증 가능 (Stateless). 가장 많이 사용되는 방식
+- **Opaque Token (불투명 토큰):** 서버에서 관리되며, 클라이언트가 내용을 알 수 없음 (OAuth 2.0 기본 방식).
+- **OAuth2.0 액세스 토큰:** API 접근 권한 부여 (보통 불투명 토큰 사용).
+- **OAuth 2.0 리프레시 토큰** → 새 액세스 토큰 발급  
+- **API Key 방식:** 간단한 API 인증 방식이지만 보안 취약.
+
 
 ---
 
-### 3️⃣ JWT (JSON Web Token) 기반 인증
+## **📌4. JWT (JSON Web Token)**
 
-**JWT란?**  
-토큰 기반 인증 방식으로 **Stateless(상태 없음) 인증 방식**을 제공하며, 클라이언트가 로그인하면 JWT를 발급받고 이후 요청마다 JWT를 포함하여 인증 수행합니다.
+### ✅**4.1 JWT 개요**
+JWT는 **토큰 기반 인증 방식**으로, 로그인 후 발급된 JWT를 사용하여 인증을 수행하는 **Stateless 인증 방식**입니다.
+클라이언트가 로그인하면 JWT를 발급받고 이후 요청마다 JWT를 포함하여 인증 수행합니다.
 
-#### 🔹 JWT 구조
+### ✅**4.2 JWT의 구성**
 | 구성 요소 | 설명 | 예제 |
 |--------|------|------|
-| **헤더 (Header)** | 토큰의 종류와 암호화 방식 | JWT, HS256 |
-| **페이로드 (Payload)** | 사용자 정보 (ID, 권한 등) | { "user": "John", "role": "admin" } |
-| **서명 (Signature)** | 위변조 방지 서명 | 암호화된 해시값 |
+| **헤더 (Header)** | 토큰의 유형 정보와 서명 알고리즘 암호화 방식 | JWT, HS256 |
+| **페이로드 (Payload)** | 사용자 정보 (ID, 권한 등), 클레임 포함 | { "user": "John", "role": "admin" } |
+| **서명 (Signature)** | 위변조 방지 서명 (무결성 보장) | 암호화된 해시값 |
 
-- **Header(헤더)** → 서명 알고리즘, 토큰 유형 정보 포함
-- **Payload(페이로드)** → 클레임(등록, 공개, 비공개) 포함
-- **Signature(서명)** → 무결성을 보장하는 서명
+#### 페이로드의 클레임(Claims) 정의 및 종류
+클레임(Claims)은 토큰에 포함된 데이터로 등록된 클레임, 공개 클레임, 비공개 클레임으로 나뉘어짐
 
-### 1.1 페이로드의 클레임(Claims) 정의 및 종류
-클레임(Claims)은 토큰에 포함된 데이터로, 다음과 같은 유형이 있음:
-
-#### 1) **등록된 클레임(Registered Claims)**
+1) **등록된 클레임(Registered Claims)**
 JWT 표준에 정의된 클레임으로, 사용이 권장됨.
 - iss (Issuer) - 발급자
 - sub (Subject) - 토큰의 주제 (사용자 ID 등)
@@ -179,91 +299,254 @@ JWT 표준에 정의된 클레임으로, 사용이 권장됨.
 - iat (Issued At) - 토큰이 발급된 시간
 - jti (JWT ID) - 토큰의 고유 식별자
 
-#### 2) **공개 클레임(Public Claims)**
-사용자가 정의한 클레임으로, 충돌을 방지하기 위해 공식적으로 등록된 네임스페이스 사용 권장.
+2) **공개 클레임(Public Claims)**
+사용자가 정의한 클레임으로, 충돌을 방지하기 위해 공식적으로 등록된 네임스페이스 사용 권장. <br>
 예: https://myapp.com/user_role
 
-#### 3) **비공개 클레임(Private Claims)**
-특정 애플리케이션이나 시스템 내부에서만 사용되는 클레임.
+3) **비공개 클레임(Private Claims)**
+특정 애플리케이션이나 시스템 내부에서만 사용되는 클레임. <br>
 예: { "user_id": "12345", "role": "admin" }
-
-#### 🔹 JWT vs 세션 기반 인증 비교
-| 비교 항목 | JWT | 세션 기반 인증 |
-|----------|-----|---------------|
-| 저장 방식 | 클라이언트 측 (토큰 저장) | 서버 측 (세션 저장) |
-| 확장성 | 높음 (Stateless) | 낮음 (서버 메모리 부담) |
-| 보안성 | 토큰 탈취 시 위험 | 세션 하이재킹 위험 |
 
 ---
 
-## 🔐 OAuth 2.0 개요
 
-OAuth 2.0은 다양한 프레임워크에서 사용되며, 대표적으로 다음과 같은 환경에서 작동함:
+### ✅**4.3 JWT 인증 과정**
+1. **사용자가 로그인 요청** → 서버에서 JWT 생성 및 반환
+2. **클라이언트가 API 요청 시 JWT를 `Authorization` 헤더에 포함**
+3. **서버는 JWT 서명 검증 후 요청 처리**
+4. **(RSA 사용 시)** 개인키로 서명한 JWT를 공개키로 검증하여 신뢰성 보장  
+
+
+### ✅**4.4 JWT 서명 및 암호화 방식 (HMAC vs RSA)**
+JWT의 서명 검증 방식은 **대칭 키(HMAC)와 비대칭 키(RSA, ECDSA)** 방식으로 구분됨.  
+
+#### 🔹 **대칭 키(Symmetric Key)**
+- 하나의 키를 사용하여 암호화와 복호화를 수행.  
+- **예시:** HMAC (Hash-based Message Authentication Code)  
+- **특징:**  
+  - 빠르고 간단한 구조  
+  - 키가 유출되면 보안에 취약  
+
+#### 🔹 **비대칭 키(Asymmetric Key)**
+- **공개키(Public Key):** 누구나 볼 수 있으며, 데이터를 암호화할 때 사용.  
+- **개인키(Private Key):** 소유자만이 보유하며, 암호화된 데이터를 복호화할 때 사용.  
+
+#### 🔹 **비대칭 암호화 적용 예시**
+- **JWT 서명:** 개인키로 서명, 공개키로 검증 (예: RSA, ECDSA)
+
+   - **RSA의 원리:**  
+  - 송신자는 **개인키(Private Key)**로 데이터를 서명  
+  - 수신자는 **공개키(Public Key)**로 서명을 검증  
+  - 이를 통해 데이터의 무결성과 발신자를 신뢰할 수 있음 
+
+   - **ECDSA:**  
+  - 타원 곡선 암호학(ECC)을 기반으로 한 서명 알고리즘  
+  - **RSA보다 짧은 서명 크기로도 동일한 보안 수준 제공**  
+  - **IoT, 블록체인 등 성능이 중요한 환경에서 사용됨**  
+
+---
+
+
+### ✅**4.5 JWT vs 세션 기반 인증 비교**
+| 비교 항목 | JWT | 세션 기반 인증 |
+|----------|-----|---------------|
+| 저장 방식 | 클라이언트 (토큰 저장) | 서버 측 (세션 저장) |
+| 확장성 | 높음 (Stateless) | 낮음 (서버 부하 증가) |
+| 보안성 | 토큰 탈취 시 위험, 그러나 서명을 포함하면 변조를 방지할 수 있음 | 세션 하이재킹 위험 |
+
+### ✅**4.6 불투명 토큰(Opaque Token) vs JWT**
+| 비교 항목 | 불투명 토큰 (Opaque Token) | JWT |
+|----------|-----------------|------|
+| 저장 방식 | 서버에서 관리 | 클라이언트에서 관리 |
+| 검증 방식 | 서버에 요청해야 확인 가능 | 토큰만으로 검증 가능 (자체적으로 검증 가능 (서명 포함)) |
+|실사용 예제 |	OAuth2.0 액세스 토큰 |	API 인증, 마이크로서비스 |
+| 예제 | 신용카드(승인 필요) | 영화관 표(바로 사용 가능) |
+
+---
+
+### ✅**4.7 JWT 보안 취약점 및 해결 방법**
+1. **토큰 탈취 위험**  
+   - JWT는 클라이언트에서 저장되므로 탈취되면 재사용될 위험이 있음.
+   - 해결책: **JWT를 httpOnly 쿠키에 저장**하여 JavaScript에서 접근 불가능하게 설정.
+
+2. **토큰 무효화 어려움**  
+   - 세션 기반 인증과 달리 JWT는 서버에서 즉시 폐기하기 어려움.
+   - 해결책: **짧은 만료 시간(exp) 설정 + 리프레시 토큰 사용**.
+
+3. **서명 키(Secret Key) 유출 위험**  
+   - HMAC 서명을 위한 키가 유출되면 공격자가 위조된 토큰을 생성 가능.
+   - 해결책: **서버 환경 변수로 관리하고, 정기적으로 키를 변경**.
+
+4. **과도한 페이로드(클레임) 포함**  
+   - JWT에 너무 많은 정보를 담으면 **토큰 크기가 커지고 전송 비용 증가**.
+   - 해결책: **필요한 최소한의 정보만 포함**.
+
+
+## **📌5. OAuth 2.0**
+
+### **✅ 5.1 OAuth 2.0 개요**
+OAuth 2.0은 **사용자 인증 및 API 접근을 안전하게 처리하기 위한 표준 프로토콜**입니다.
+JWT와 불투명 토큰을 모두 사용할 수 있으며, **외부 서비스**(Google, Facebook, GitHub 등)와의 **인증 연동**에 주로 사용됩니다.
+
+### **✅ 5.2 OAuth 2.0의 핵심 개념**  
+
+**사용되는 대표적인 환경**
 - **Spring Security** (Java)
 - **Express.js + Passport.js** (Node.js)
 - **Django OAuth Toolkit** (Python)
 
-### 🔹 주요 개념
-- **리소스 소유자(Resource Owner)** → 사용자
-- **클라이언트(Client)** → 사용자 대신 리소스를 요청하는 애플리케이션
-- **인증 서버(Authorization Server)** → 사용자를 인증하고 액세스 토큰 발급
-- **리소스 서버(Resource Server)** → 보호된 리소스를 제공
+| 개념 | 설명 |
+|------|------|
+| **리소스 소유자 (Resource Owner)** | 서비스의 사용자 (예: 구글 계정 사용자) |
+| **클라이언트 (Client)** | 사용자의 정보를 요청하는 애플리케이션 (예: GitHub, Facebook 앱) |
+| **인증 서버 (Authorization Server)** | 사용자 인증 및 액세스 토큰 발급 (예: Google OAuth Server) |
+| **리소스 서버 (Resource Server)** | 보호된 리소스를 제공하는 서버 (예: Google API, Facebook Graph API) |
+| **액세스 토큰 (Access Token)** | API 요청 시 필요한 인증 토큰 (보통 불투명 토큰) |
+| **리프레시 토큰 (Refresh Token)** | 액세스 토큰이 만료되었을 때 새로 발급받기 위한 토큰 |
 
-### 🔹 OAuth 2.0 동작 방식
-1. 사용자가 클라이언트 앱에 로그인 요청
-2. 클라이언트가 인증 서버에 권한 요청
-3. 인증 서버가 사용자 인증 후 권한 부여 코드 발급
-4. 클라이언트가 액세스 토큰 요청
-5. 인증 서버가 액세스 토큰 발급
-6. 클라이언트가 리소스 서버에 액세스 토큰 전달 후 보호된 리소스 요청
-
----
-
-### 4️⃣ 보안 강화 및 권한 부여
-
-#### 🔹  **유저 구분과 권한 부여 (RBAC - Role-Based Access Control)**
-✅ `@Secured("ROLE_ADMIN")` → 특정 역할을 가진 사용자만 접근 가능  
-✅ `@PreAuthorize("hasRole('USER')")` → 실행 전 권한 체크  
-✅ `@PostAuthorize("returnObject.owner == authentication.name")` → 실행 후 반환 값 검증  
-
-#### 🔹 비밀번호 해싱 (BCrypt)
-```java
-@Bean
-public PasswordEncoder passwordEncoder() {
-    return new BCryptPasswordEncoder();
-}
-```
-
-#### 🔹 CSRF/XSRF 보호
-```java
-http.csrf().disable();
-```
-
-#### 🔹 CORS (Cross-Origin Resource Sharing)
-```java
-@CrossOrigin(origins = "https://example.com")
-```
-
-#### 🔹 RSA & JWT 서명
-- JWT를 서명하고 검증할 때 **RSA 공개 키/개인 키 암호화**를 사용할 수 있음
+✅ **OAuth 2.0의 핵심 원칙:**  
+- **"ID/PW를 직접 공유하지 않고, 서비스 간 안전한 인증을 수행"**  
+- **액세스 토큰을 이용하여 API 접근을 관리**  
+- **토큰이 만료되면 리프레시 토큰을 사용하여 새로운 액세스 토큰을 발급받을 수 있음**  
 
 ---
 
-## 📖 보안 개념 쉽게 이해하기
 
-### 🔹 불투명 토큰(Opaque Token) vs JWT
-| 비교 항목 | 불투명 토큰 (Opaque Token) | JWT |
-|----------|-----------------|------|
-| 저장 방식 | 서버에서 관리 | 클라이언트가 직접 보관 |
-| 검증 방식 | 서버에 요청해야 확인 가능 | 토큰만으로 검증 가능 |
-| 예제 | 신용카드(승인 필요) | 영화관 표(바로 사용 가능) |
+### **✅ 5.3 OAuth 2.0에서 사용하는 토큰**  
 
-🔹 **유저 구분과 권한 부여 (RBAC - Role-Based Access Control)**  
+#### **1️⃣ OAuth 액세스 토큰 (Access Token)**
+- **역할:** API 요청을 인증하기 위한 토큰  
+- **저장 위치:** 클라이언트 (메모리, 로컬 스토리지, httpOnly 쿠키 등)  
+- **특징:**  
+  - API 요청 시 `Authorization: Bearer <token>` 형태로 포함  
+  - **만료 시간이 짧음 (보통 몇 분~몇 시간)**  
+  - 보안 강화를 위해 **httpOnly 쿠키에 저장하거나, 매 요청마다 서버에서 검증하도록 설정**  
+- **예제 (HTTP Authorization 헤더 사용)**:
+  ```http
+  Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+  ```
+
+---
+
+#### **2️⃣ OAuth 리프레시 토큰 (Refresh Token)**
+- **역할:** 액세스 토큰이 만료되었을 때, 새 액세스 토큰을 받기 위한 토큰  
+- **저장 위치:** **보안이 강화된 저장소** (DB, Secure Storage, httpOnly 쿠키)  
+- **특징:**  
+  - **액세스 토큰보다 수명이 길다 (보통 몇 주~몇 개월)**  
+  - **탈취될 경우 보안 위험이 크므로 안전한 저장이 필요**  
+  - 일반적으로 **서버에서 관리**하며, **httpOnly 쿠키 또는 DB에 저장**  
+- **예제 (리프레시 요청 시 사용)**:
+  ```http
+  POST /oauth/token
+  Content-Type: application/x-www-form-urlencoded
+
+  grant_type=refresh_token&refresh_token=xyz123
+  ```
+
+[물음표] **리프레시 토큰이 필요한 이유**
+- 액세스 토큰은 보안을 위해 **짧은 만료 시간**을 갖도록 설정됨 (예: 15분 ~ 1시간).
+- 사용자가 계속해서 서비스를 이용하려면, **새로운 액세스 토큰을 발급받아야 함**.
+- 하지만 **매번 로그인하면 불편하기 때문에**, 리프레시 토큰을 이용하여 **자동으로 새로운 액세스 토큰을 발급**.
+- **리프레시 토큰의 보안 위험**:
+  - 탈취되면 장기간 사용 가능하기 때문에 **보안이 강화된 저장 방식(httpOnly 쿠키, Secure Storage)**이 필요함.
+  - 리프레시 토큰이 유출되었을 경우, **블랙리스트에 추가하여 즉시 폐기 가능**.
+
+---
+
+
+### **✅ 5.4 OAuth 2.0 인증 흐름**
+OAuth 2.0에는 다양한 인증 방식이 존재하지만, 가장 많이 사용되는 **Authorization Code Flow**를 기준으로 설명합니다.  
+
+**🔹 Authorization Code Flow**  
+1️⃣ **사용자가 클라이언트 앱에서 로그인 요청**  
+2️⃣ **클라이언트가 인증 서버(예: Google OAuth)에 인증 요청**  
+3️⃣ **사용자가 Google 로그인 후 "권한 부여" 승인**  
+4️⃣ **인증 서버가 클라이언트에 "인가 코드" 발급**  
+5️⃣ **클라이언트가 "인가 코드"를 이용하여 액세스 토큰 요청**  
+6️⃣ **인증 서버가 클라이언트에 액세스 토큰 발급**  
+7️⃣ **클라이언트가 액세스 토큰을 API 요청 시 포함하여 인증 수행**  
+8️⃣ **액세스 토큰이 만료되면, 리프레시 토큰을 이용하여 새 액세스 토큰 요청**  
+
+---
+
+### **✅ 5.5 OAuth 2.0 인증 방식 (Authorization Grant Types)**
+OAuth 2.0에는 다양한 **권한 부여 방식(Grant Types)** 이 있으며, 각각의 방식은 사용 목적이 다릅니다.
+
+| 인증 방식 | 설명 | 사용 예제 |
+|----------|------|----------|
+| **Authorization Code (인가 코드 방식)** | **가장 안전한 방식**으로, 클라이언트가 직접 사용자 인증 정보를 처리하지 않음 | Google, Facebook 로그인 |
+| **Implicit (암시적 방식, 비추천)** | 브라우저 기반 앱(SPA)에서 사용되었으나 보안 취약성으로 현재는 거의 사용되지 않음 | ❌ 비추천 |
+| **Client Credentials (클라이언트 자격 증명 방식)** | 사용자 없이 클라이언트 자체가 API를 호출하는 경우 사용 | **마이크로서비스 간 통신** |
+| **Password Grant (비밀번호 방식, 비추천)** | 사용자가 **ID/PW를 직접 제공하는 방식**으로, 보안성이 낮아 거의 사용되지 않음 | ❌ 비추천 |
+
+[물음표] **왜 Implicit Grant와 Password Grant 방식이 비추천될까?**
+- **Implicit Grant (암시적 인증 방식)**
+  - 브라우저에서 직접 액세스 토큰을 받기 때문에 **토큰이 URL에 노출될 위험이 큼**.
+  - 토큰이 쉽게 탈취될 수 있어 보안성이 낮음.
+  - 현재 OAuth 2.1에서는 **권장되지 않는 방식**.
+
+- **Password Grant (비밀번호 방식)**
+  - 사용자의 **ID/PW를 직접 클라이언트에서 입력받아 서버로 보내야 함** → 보안 취약.
+  - OAuth의 기본 원칙인 **"ID/PW를 공유하지 않고 인증"**하는 원칙과 반대됨.
+  - 따라서, **대체 방식으로 Authorization Code Flow를 사용해야 함.**
+
+
+---
+
+### **✅ 5.6 OAuth 2.0에서 JWT와 불투명 토큰의 사용**
+OAuth 2.0에서는 **JWT와 불투명 토큰을 모두 사용할 수 있음**.  
+하지만, **어떤 환경에서 사용하는지에 따라 적합한 방식이 다름**.  
+
+| 사용 사례 | JWT 사용 | 불투명 토큰 사용 |
+|----------|---------|---------------|
+| **마이크로서비스 환경 (MSA)** | ✅ 권장 | ❌ 비효율적 |
+| **OAuth 2.0 API 인증** | ❌ 대부분 불투명 토큰 사용 | ✅ 권장 (액세스 토큰) |
+| **서버 부하 최소화** | ✅ 토큰 자체 검증 가능 | ❌ 서버 요청 필요 |
+| **토큰 폐기 및 관리 필요** | ❌ 어려움 (서버에서 관리 불가능) | ✅ 서버에서 중앙 관리 가능 |
+
+
+[물음표] **JWT vs 불투명 토큰: 언제 사용할까?**
+- **JWT를 사용하는 경우:**
+  - 마이크로서비스 환경(MSA)에서 중앙 인증 서버 없이 자체적으로 토큰 검증이 필요할 때.
+  - API 게이트웨이가 토큰 검증을 수행하고 개별 서비스에서 다시 검증할 필요가 없을 때.
+
+- **불투명 토큰을 사용하는 경우:**
+  - OAuth 2.0을 통해 API 인증을 수행할 때 (예: Google, Facebook API).
+  - 보안성이 중요한 환경에서 토큰을 서버에서 관리하고 검증해야 할 때.
+  - 액세스 토큰을 즉시 폐기해야 하는 경우 (JWT는 서버에서 폐기가 어렵지만, 불투명 토큰은 가능).
+
+
+✅ **결론:**  
+- **OAuth 2.0의 액세스 토큰은 불투명 토큰을 기본으로 사용**  
+- **OAuth 2.0에서 JWT를 사용할 수도 있지만, 서버에서 직접 검증해야 하는 불투명 토큰이 기본적**  
+
+
+## 📌⚫ 6. 보안 강화 및 권한 부여
+
+### ✅6.1 RBAC (Role-Based Access Control)
+**사용자의 역할(Role)에 따라 접근 권한을 설정하는 방식**
+
 - 직장에서의 역할과 비슷합니다.
 - 예를 들어, 회사에서는 사장은 중요한 문서를 볼 수 있지만, 인턴은 볼 수 없습니다.
   마찬가지로, 웹사이트에서도 관리자는 모든 기능을 사용할 수 있지만, 일반 사용자는 일부 기능만 사용 가능하도록 설정하는 것
 
-🔹 **비밀번호 해싱 (BCrypt)**  
+- `@Secured("ROLE_ADMIN")` → 특정 역할을 가진 사용자만 접근 가능
+- `@PreAuthorize("hasRole('USER')")` → 실행 전 권한 체크
+- `@PostAuthorize("returnObject.owner == authentication.name")` → 실행 후 반환 값 검증
+
+**RBAC의 장점과 한계**
+✅ **장점:**
+- 역할을 기반으로 권한을 관리하므로 **유지보수가 용이**함.
+- 역할 단위로 사용자 그룹을 관리하여 **대규모 시스템에 적합**.
+- 접근 권한을 역할에 할당하므로 **보안성이 향상**됨.
+
+❌ **한계:**
+- **역할(Role)이 너무 많아지면 관리가 복잡해질 수 있음** (예: 수십 개의 역할이 존재하는 경우).
+- **세부적인 권한 설정에는 한계가 있음** → 이를 해결하기 위해 **ABAC(Attribute-Based Access Control)** 같은 방식이 필요할 수 있음.
+
+---
+
+### ✅6.2 비밀번호 해싱 (BCrypt)
 - Spring Security는 비밀번호를 안전하게 저장하기 위해 `BCryptPasswordEncoder`를 제공  
 ```java
 @Bean
@@ -271,26 +554,22 @@ public PasswordEncoder passwordEncoder() {
     return new BCryptPasswordEncoder();
 }
 ```
----
 
-### 🔹 공개키 및 개인키 상세 설명
+[물음표] **왜 비밀번호 해싱이 필요한가?**
+- 비밀번호를 평문(Plain Text)으로 저장하면 데이터베이스가 해킹당할 경우 **모든 사용자 정보가 유출됨**.
+- 이를 방지하기 위해 해싱(Hashing)을 사용하여 **비밀번호를 복호화할 수 없도록 변환**.
 
-### 2.1 대칭 키와 비대칭 키
-- **대칭 키(Symmetric Key)**: 하나의 키로 암호화와 복호화 수행 (예: HMAC)
-- **비대칭 키(Asymmetric Key)**: 공개키(Public Key)와 개인키(Private Key)로 구성됨 (예: RSA, ECDSA)
+**BCrypt의 특징**
+- **Salt 자동 추가** → 같은 비밀번호라도 **매번 다른 해시 값이 생성됨**.
+- **연산 비용 조정 가능** → 보안 수준을 높이기 위해 연산 비용을 설정할 수 있음.
+- **Rainbow Table 공격 방어** → Salt 덕분에 Rainbow Table 공격(사전 해시 값 매칭 공격)이 어려움.
 
-#### 2.2 비대칭 키 개념
-- **공개키(Public Key)**: 누구나 볼 수 있으며, 데이터를 암호화할 때 사용
-- **개인키(Private Key)**: 소유자만이 보유하며, 암호화된 데이터를 복호화할 때 사용
 
-#### 2.3 비대칭 암호화 적용 예시
-- JWT 서명: 개인키로 서명, 공개키로 검증
-- HTTPS (SSL/TLS): 클라이언트-서버 간 보안 연결을 제공
-- SSH 키 인증: 비밀번호 없이 서버 접근을 가능하게 함
+
 
 ---
 
-### 🔹 CSRF/XSRF (Cross-Site Request Forgery) (크로스 사이트 요청 위조)
+### ✅6.3 CSRF/XSRF
 **악성 웹사이트가 사용자의 계정을 몰래 이용하는 공격**
 
 - CSRF 공격 방지를 위해 Spring Security는 기본적으로 CSRF 보호 기능을 활성화  
@@ -300,13 +579,21 @@ public PasswordEncoder passwordEncoder() {
 1. 사용자가 인터넷 뱅킹에 로그인한 상태에서 악성 광고를 클릭
 2. 해커가 사용자의 계정에서 자동 송금
 
-✔️ **방어 방법**:
-java
-http.csrf().enable();
+✔️ **방어 방법**
+```java
+http.csrf().disable();
+```
+
+[물음표] **왜 REST API에서는 CSRF 보호를 비활성화할까?**
+- CSRF 공격은 **브라우저의 쿠키 자동 전송**을 악용하는 공격.
+- 하지만 REST API에서는 **주로 JWT 기반 인증(Authorization 헤더 사용)**을 사용하기 때문에 **쿠키 기반 인증이 아닌 경우 CSRF 위험이 낮음**.
+- 즉, **클라이언트가 직접 Authorization 헤더를 추가해야 하므로, 불필요한 CSRF 보호를 비활성화하는 경우가 많음**.
+
+
 
 ---
 
-### 🔹 CORS (교차 출처 리소스 공유)
+### ✅6.4 CORS 설정 (Cross-Origin Resource Sharing)
 **다른 출처에서 API 호출을 허용하는 방법**
 - `@CrossOrigin` 애너테이션을 사용하여 설정 가능
 - 
@@ -314,191 +601,72 @@ http.csrf().enable();
 - A 햄버거 가게는 자사 배달 앱에서만 주문 가능 (기본 설정)
 - B 배달 앱에서 주문하려면 **CORS 허용 필요**
 
-✔️ **설정 방법**:
-java
+✔️ **설정 방법**
+```java
 @CrossOrigin(origins = "https://example.com")
+```
+
+[물음표] **CORS에서 Preflight 요청이란?**
+- 클라이언트가 서버에 실제 요청을 보내기 전에, **OPTIONS 요청을 보내서 허용된 메서드/헤더를 확인**하는 과정.
+- 브라우저가 자동으로 실행하며, 보안 목적(서버가 요청을 허용하는지 확인)을 가짐.
+
+[물음표] **CORS에서 Credentials 옵션이란?**
+- 기본적으로 CORS 요청은 **쿠키를 포함하지 않음**.
+- 하지만 `credentials: 'include'` 옵션을 추가하면, 쿠키와 인증 정보를 함께 전송할 수 있음.
+- 서버에서도 `Access-Control-Allow-Credentials: true` 설정이 필요.
+
 
 ---
 
-### 🔹 XSS (크로스 사이트 스크립팅)
+### ✅6.5 XSS (Cross-Site Scripting)
 **웹사이트에 악성 스크립트를 삽입하여 사용자 정보를 훔치는 공격**
 - HTML 태그 삽입 공격을 방어하기 위해 input 값에 대한 검증 필요  
 - Spring Security에서 기본적으로 XSS 방어 기능 제공
-- 
+
 ✔️ **비유**: "악성 댓글 사기"
 1. "이 링크 클릭하면 공짜 쿠폰!" 댓글 작성
 2. 사용자가 클릭하면 해커에게 계정 정보 유출
 
-✔️ **방어 방법**:
-java
+✔️ **방어 방법**
+```java
 http.headers().xssProtection();
+http.headers().contentSecurityPolicy("script-src 'self'");  
+```
+
+*    ✅ xssProtection() vs contentSecurityPolicy()
+
+| 비교항목 | xssProtection() | contentSecurityPolicy() |
+|-------|-------|-------|
+|지원 여부 |   오래된 브라우저에서만 동작 (Chrome, Firefox 지원 X) |	모든 최신 브라우저에서 지원됨
+|보안 강도 |	브라우저가 XSS 공격을 감지하면 차단 |	XSS 공격 자체를 차단 (스크립트 실행 금지)
+|차단 방식 |	XSS 공격 감지 후 페이지 로드 차단 |	허용된 스크립트 외 실행 차단
+|권장 여부 |	❌ 비권장 (구식 보안 방식) |	✅ 권장 (최신 보안 표준)
+
 
 ---
-### 🔹 **인증(Authentication)과 인가(Authorization)란?**  
+
+## 🔖 용어 정리  
+- ### 🔹 BoilerPlateCode  
+  특정 언어나 프레임워크에서 필수적으로 포함해야 하는 코드 구조  
+  (반복적으로 동일하게 사용되는 코드, IDE, 템플릿 엔진 등을 통해 자동 생성되는 코드, 프레임워크나 라이브러리에서 기본 제공하는 설정 코드) 
+
+---
+- ### 🔹 **인증(Authentication)과 인가(Authorization)란?**  
 - **인증(Authentication)**: 사용자가 누구인지 확인하는 과정  
   - 예: 회사 출입문에서 직원 카드를 태그하면 "이 사람이 직원인가?"를 확인하는 것  
 - **인가(Authorization)**: 인증된 사용자가 특정 기능을 사용할 수 있는지 결정하는 과정  
   - 예: 직원 카드를 태그해도 **사장실에는 접근할 수 없는 것처럼**, 사용자의 권한을 제한하는 것  
 
 ---
-
-### 🔹 **Stateless(상태 없음) 방식이란?**  
+- ### 🔹 **Stateless(상태 없음) 방식이란?**  
 - **서버가 사용자의 정보를 기억하지 않는 방식**  
 - 예: **카페에서 주문할 때마다 신분증을 보여줘야 하는 시스템**  
 - 서버가 고객 정보를 기억하지 않아서, **매번 로그인할 때 사용자 정보를 다시 보내야 함**  
 
 ---
 
-## 🔐 보안에서 인증에 이용되는 토큰 정리
-
-보안에서 **토큰(Token)** 은 사용자의 인증 및 권한 부여에 사용되는 문자열 또는 데이터 구조입니다. 토큰을 이용하면 서버는 사용자의 신원을 지속적으로 확인하지 않고도 인증 상태를 유지할 수 있습니다.
-
----
-
-## 📌 1. 토큰의 역할
-- 사용자의 **인증(Authentication)** 을 유지
-- **권한 부여(Authorization)** 를 통해 리소스 접근 제어
-- 세션을 저장하지 않고도 **무상태(Stateless) 인증** 가능
-- 쿠키 기반 인증의 단점을 보완하고, 확장성이 뛰어남
-
----
-
-## 📌 2. 토큰의 종류
-### 1️⃣ **세션 토큰 (Session Token)**
-- **개념**: 로그인 시 서버가 생성하여 클라이언트에 전달하는 토큰
-- **저장 위치**: 서버의 세션 저장소 (DB, Redis 등)
-- **특징**:
-  - 서버에서 세션을 저장하고 관리해야 함 (Stateful)
-  - 보안이 강하지만 서버 부하 증가 가능
-  - 주로 **전통적인 웹 애플리케이션**에서 사용
-
----
-
-### 2️⃣ **JWT (JSON Web Token)**
-- **개념**: 인증 정보를 JSON 형태로 인코딩하여 서명한 토큰
-- **구조**: `Header.Payload.Signature`
-- **저장 위치**: 클라이언트 측 (로컬 스토리지, 쿠키, 세션 스토리지)
-- **특징**:
-  - **서버에서 상태를 저장할 필요 없음 (Stateless)**
-  - 서명(Signature)으로 무결성 보장 (변조 감지 가능)
-  - 짧은 만료 시간 설정이 필수 (탈취 시 보안 위험)
-  - 자주 **OAuth 2.0, OpenID Connect, API 인증**에 사용됨
-- **예제**:
-  ```json
-  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.
-  eyJ1c2VySWQiOiIxMjM0NTYiLCJyb2xlIjoiYWRtaW4iLCJleHAiOjE2ODI2NjUyMDB9.
-  dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk
-  ```
-
----
-
-### 3️⃣ **OAuth 액세스 토큰 (Access Token)**
-- **개념**: OAuth 2.0에서 사용자의 인증 후 API 접근을 위한 토큰
-- **저장 위치**: 클라이언트 (메모리, 로컬 스토리지 등)
-- **특징**:
-  - API 요청 시 포함하여 리소스에 접근 가능
-  - **만료 시간**이 짧음 (보통 몇 분~몇 시간)
-  - OAuth 2.0 인증 흐름에서 사용됨 (예: Google, Facebook 로그인)
-- **예제 (HTTP Authorization 헤더에 사용)**:
-  ```http
-  Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-  ```
-
----
-
-### 4️⃣ **OAuth 리프레시 토큰 (Refresh Token)**
-- **개념**: 액세스 토큰이 만료되었을 때, 새 액세스 토큰을 받기 위한 토큰
-- **저장 위치**: **보안이 강화된 저장소** (DB, Secure Storage)
-- **특징**:
-  - 액세스 토큰보다 **수명이 길다**
-  - 탈취될 경우 보안 위험이 크므로 **안전한 저장** 필요
-  - 일반적으로 **백엔드에서 관리**하며, 주로 **쿠키(httpOnly)** 에 저장
-
----
-
-## 📌 3. 토큰 사용 시 보안 고려사항
-✅ **토큰 저장 위치**  
-- 액세스 토큰: **메모리** 또는 **httpOnly 쿠키**
-- 리프레시 토큰: **보안 저장소** (DB, Secure Storage)
-
-✅ **토큰 유효 기간 관리**  
-- 액세스 토큰: **짧게 (5~30분)**
-- 리프레시 토큰: **길게 (7일~30일)**
-- 세션 토큰: **로그아웃 시 삭제**
-
-✅ **HTTPS 사용**  
-- 네트워크에서 **토큰 탈취 방지** (중간자 공격 방어)
-
-✅ **서명 검증**  
-- JWT는 서명을 검증하여 변조 여부 확인
-
-✅ **토큰 탈취 시 대응 방법**  
-- **단일 기기 세션 유지** (1개 이상의 로그인 방지)
-- **로그아웃 시 리프레시 토큰 폐기**
-- **IP, User-Agent 등 추가 확인**
-
----
-
-## 📌 4. 토큰 비교 요약
-
-| 토큰 종류       | 저장 위치 | 특징 | 주 사용처 |
-|---------------|---------|-----|--------|
-| **세션 토큰** | 서버 (DB, Redis) | 상태 유지 필요 | 전통적인 웹 인증 |
-| **JWT** | 클라이언트 | 상태 저장 불필요, 서명 포함 | OAuth, OpenID, API 인증 |
-| **OAuth 액세스 토큰** | 클라이언트 | API 접근 인증 | OAuth 2.0, 외부 서비스 |
-| **OAuth 리프레시 토큰** | 서버 (DB) | 새 액세스 토큰 발급 | OAuth 장기 인증 |
-
----
-
-## ✅ 결론
-- **웹 애플리케이션**: JWT or 세션 토큰
-- **OAuth 2.0 기반 API**: 액세스 토큰 + 리프레시 토큰
-- **보안 강화 필요**: httpOnly 쿠키, HTTPS, 짧은 유효 기간 설정
-
--------
-
-## 🔑 인증 및 인가 흐름
-
-### 🔐 **인증 방식 요약**
-
-| 인증 방식        | 설명 | 특징 | 주 사용처 |
-|---------------|-----|-----|--------|
-| **Spring Security** | Spring 기반의 보안 프레임워크 | 인증, 인가 처리 제공 | Spring 기반 웹 애플리케이션 |
-| **OAuth 2.0** | 토큰 기반 인증 방식 | 액세스 토큰 & 리프레시 토큰 사용 | 소셜 로그인, API 인증 |
-| **JWT (JSON Web Token)** | 무상태 인증 토큰 | 자체 서명 포함, 서버 상태 저장 불필요 | REST API, MSA 인증 |
-| **Session 인증** | 서버 측에서 세션 저장 | 세션 ID를 쿠키로 저장, 서버 상태 유지 필요 | 전통적인 웹 애플리케이션 |
-
-**📌 요약**
-- **Spring Security**: 인증 및 인가를 처리하는 프레임워크  
-- **OAuth 2.0**: 액세스 토큰을 이용한 인증 방식  
-- **JWT**: 자체 서명이 포함된 토큰 기반 인증 (OAuth 2.0에서도 사용 가능)  
-- **Session 인증**: 서버에 세션을 저장하는 방식 (Stateful)
-
-각 방식은 **Spring Security에서 조합하여 사용 가능**하며, OAuth 2.0 및 JWT는 RESTful API 인증에 자주 활용됩니다! 🚀
-
-### 1️⃣ **Spring Security만 사용한 경우**
-1. 사용자가 로그인 요청 (ID/PW)
-2. `UserDetailsService`가 사용자 정보 조회
-3. `AuthenticationManager`가 인증 수행
-4. 인증 성공 시 `SecurityContextHolder`에 사용자 정보 저장
-5. 인증된 사용자가 보호된 리소스 요청 시 접근 허용
-
-### 2️⃣ **JWT만 사용한 경우**
-1. 사용자가 로그인 요청 (ID/PW)
-2. 서버가 사용자 인증 후 JWT 생성 및 반환
-3. 클라이언트가 요청 시 JWT를 `Authorization` 헤더에 포함
-4. 서버는 JWT 서명을 검증 후 요청 처리
-
-### 3️⃣ **Spring Security + JWT 사용한 경우**
-1. 사용자가 로그인 요청 (ID/PW)
-2. Spring Security가 사용자 인증 수행 후 JWT 발급
-3. 클라이언트가 JWT를 포함하여 API 요청
-4. Spring Security의 `JwtFilter`가 요청을 가로채서 JWT 검증
-5. 검증된 경우 `SecurityContextHolder`에 사용자 정보 저장 후 요청 처리
-
----
-
-
 ## 📌 참고 및 출처
-- 📖 [Modern API Development with Spring 6 and Spring Boot 3](https://github.com/PacktPublishing/Modern-API-Development-with-Spring-6-and-Spring-Boot-3)  
-- 🔗 [SecurityFilterChain 종류 및 설명](https://docs.spring.io/spring-security/reference/servlet/architecture.html#servlet-security-filters)  
+- 📖 [Modern API Development with Spring 6 and Spring Boot 3](https://github.com/PacktPublishing/Modern-API-Development-with-Spring-6-and-Spring-Boot-3)
+- 🔗 [Spring Security 공식 문서](https://docs.spring.io/spring-security/reference/servlet/architecture.html#servlet-security-filters)
+
+🚀 이 문서는 Spring Security & JWT 학습을 위해 체계적으로 정리된 문서입니다. 
