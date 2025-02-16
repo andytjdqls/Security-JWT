@@ -4,44 +4,22 @@
 
 ## 🗂️ 목차
 
-1. [**Spring Security 개요**](#spring-security-개요)  
-   - [Spring Security란?](#11-spring-security란)  
-   - [요청 처리 흐름](#12-spring-security-요청-처리-흐름)  
-   - [인증(Authentication)과 인가(Authorization)](#-인증authentication과-인가authorization이란)  
-
-2. [**Spring Security 인증 과정**](#spring-security-인증-과정)  
-   - [기본적인 인증 과정](#21-기본적인-인증-과정)  
-   - [필터 체인 구조](#22-spring-security-필터-체인-구조)  
-   - [인증 방식에 따른 필터 체인 변화](#23-인증-방식에-따른-spring-security-필터-체인-구조의-변화)  
-
-3. [**세션 vs JWT vs OAuth 2.0**](#세션-vs-jwt-vs-oauth-20)  
-   - [쿠키 vs 세션](#-쿠키-vs-세션-비교)  
-   - [세션 기반 인증 vs JWT 인증](#-세션-vs-jwt-비교)  
-   - [JWT vs OAuth 2.0](#-토큰-인증-방식-비교-jwt-vs-oauth-20)  
-
-4. [**JWT (JSON Web Token)**](#jwt-json-web-token)  
-   - [JWT 개요 및 구조](#41-jwt-개요)  
-   - [JWT 서명 방식 (HMAC vs RSA)](#44-jwt-서명-및-암호화-방식-hmac-vs-rsa)  
-   - [JWT 보안 고려사항](#47-jwt-보안-취약점-및-해결-방법)  
-
-5. [**OAuth 2.0**](#oauth-20)  
-   - [OAuth 2.0 개념 및 핵심 요소](#52-oauth-20의-핵심-개념)  
-   - [액세스 토큰 vs 리프레시 토큰](#53-oauth-20에서-사용하는-토큰)  
-   - [OAuth 2.0 인증 흐름](#54-oauth-20-인증-흐름)  
-   - [OAuth 2.0에서 JWT와 불투명 토큰 비교](#56-oauth-20에서-jwt와-불투명-토큰의-사용)  
-
-6. [**보안 설정 및 강화**](#보안-설정-및-강화)  
-   - [RBAC (Role-Based Access Control)](#61-rbac-role-based-access-control)  
-   - [비밀번호 해싱 (BCrypt)](#62-비밀번호-해싱-bcrypt)  
-   - [CSRF/XSRF 방어](#63-csrfxsrf)  
-   - [CORS 설정](#64-cors-설정-cross-origin-resource-sharing)  
-   - [XSS 방어 (Content Security Policy)](#65-xss-cross-site-scripting)  
-
-7. [**부록 및 용어 정리**](#용어-정리)  
-   - [Boilerplate Code](#-boilerplatecode)  
-   - [Stateless 개념](#-stateless상태-없음-방식이란)  
-   - [주요 참고 자료 및 출처](#-참고-및-출처)  
+1. [**Spring Security 개요**](#-1-spring-security-개요)  
+2. [**Spring Security 인증 과정**](#-2-spring-security-인증-과정)  
+3. [**쿠키 vs 세션 vs JWT 인증**](#-3-쿠키cookie)  
+4. [**세션(Session) 기반 인증**](#-4-세션session-기반-인증)  
+5. [**토큰 기반 인증**](#5-토큰-기반-인증)  
+6. [**JWT (JSON Web Token)**](#6-jwt-json-web-token)  
+7. [**OAuth 2.0**](#7-oauth-20)  
+8. [**보안 강화 및 권한 부여**](#-8-보안-강화-및-권한-부여)  
+9. [**용어 정리**](#9-용어-정리)  
+10. [**참고 및 출처**](#10--참고-및-출처)  
 ---
+
+#6-jwt-json-web-token
+#7-oauth-20
+#9-용어-정리
+
 
 ## 🎯 목적
 이 문서는 **Spring Security와 JWT**를 학습하며 정리한 내용을 담고 있습니다.
@@ -257,12 +235,12 @@ Spring Security는 여러 개의 **필터 체인(Filter Chain)**을 통해 보�
 
 ---
 
-## **📌 1. 쿠키(Cookie)**
+## **📌 3. 쿠키(Cookie)**
 쿠키는 **사용자의 인증 정보를 브라우저에 저장하여 로그인 상태를 유지하는 방식**입니다.
 
 ---
 
-### **✅ 1.1 쿠키(Cookie)란?**
+### **✅ 3.1 쿠키(Cookie)란?**
 - 클라이언트(브라우저)에 저장되는 **작은 데이터 조각**  
 - 서버가 클라이언트에 응답할 때 **Set-Cookie** 헤더를 통해 생성  
 - 이후 요청마다 **쿠키를 자동으로 포함하여 서버에 전송**  
@@ -270,7 +248,7 @@ Spring Security는 여러 개의 **필터 체인(Filter Chain)**을 통해 보�
 
 ---
 
-### **✅ 1.2 쿠키의 특징**
+### **✅ 3.2 쿠키의 특징**
 ✅ **자동 전송:** 브라우저가 요청마다 자동으로 쿠키를 서버에 전송  
 ✅ **도메인 기반:** 특정 도메인에서만 사용 가능 (`SameSite` 정책으로 보안 강화 가능)  
 ✅ **httpOnly 옵션:** XSS 공격 방지를 위해 **JavaScript에서 접근 불가능하도록 설정 가능**  
@@ -278,7 +256,7 @@ Spring Security는 여러 개의 **필터 체인(Filter Chain)**을 통해 보�
 
 ---
 
-### **✅ 1.3 쿠키의 예제 (Set-Cookie 헤더)**
+### **✅ 3.3 쿠키의 예제 (Set-Cookie 헤더)**
 ```http
 Set-Cookie: sessionId=abc123; HttpOnly; Secure; SameSite=Strict
 ```
@@ -289,7 +267,7 @@ Set-Cookie: sessionId=abc123; HttpOnly; Secure; SameSite=Strict
 
 ---
 
-### **✅ 1.4 쿠키 기반 인증의 흐름**
+### **✅ 3.4 쿠키 기반 인증의 흐름**
 1️⃣ 사용자가 로그인 요청 (`/login`)  
 2️⃣ 서버가 **사용자를 인증 후 쿠키를 생성**하여 응답  
 3️⃣ 클라이언트(브라우저)가 쿠키를 저장  
@@ -298,12 +276,12 @@ Set-Cookie: sessionId=abc123; HttpOnly; Secure; SameSite=Strict
 
 ---
 
-## **📌 2. 세션(Session) 기반 인증**
+## **📌 4. 세션(Session) 기반 인증**
 세션(Session)은 **사용자의 로그인 정보를 서버에서 관리하는 방식**입니다.
 
 ---
 
-### **✅ 2.1 세션(Session)이란?**
+### **✅ 4.1 세션(Session)이란?**
 - 서버가 **사용자의 로그인 상태를 유지하기 위해 생성하는 데이터**  
 - 클라이언트는 `sessionId` 쿠키를 이용하여 세션을 식별  
 - **세션 정보는 서버에서 관리되며, 클라이언트에는 세션 ID만 저장**  
@@ -311,7 +289,7 @@ Set-Cookie: sessionId=abc123; HttpOnly; Secure; SameSite=Strict
 
 ---
 
-### **✅ 2.2 세션의 특징**
+### **✅ 4.2 세션의 특징**
 ✅ **서버에서 사용자 상태를 관리** → 무결성이 높음  
 ✅ **쿠키에는 sessionId만 저장** → 보안성이 더 높음  
 ✅ **클라이언트가 쿠키를 삭제해도 서버에서 로그아웃 처리 가능**  
@@ -323,7 +301,7 @@ Set-Cookie: sessionId=abc123; HttpOnly; Secure; SameSite=Strict
 
 ---
 
-### **✅ 2.3 세션 기반 인증의 흐름**
+### **✅ 4.3 세션 기반 인증의 흐름**
 1️⃣ 사용자가 로그인 요청 (`/login`)  
 2️⃣ 서버가 **사용자를 인증 후 세션 생성 (sessionId 발급)**  
 3️⃣ **sessionId를 쿠키에 담아 클라이언트에 전달**  
@@ -332,7 +310,7 @@ Set-Cookie: sessionId=abc123; HttpOnly; Secure; SameSite=Strict
 
 ---
 
-### **✅ 2.4 세션과 쿠키의 관계**
+### **✅ 4.4 세션과 쿠키의 관계**
 - **쿠키는 클라이언트 측에서 세션 ID를 저장하는 용도로 사용됨**  
 - 서버에서 세션을 생성하면 **sessionId가 쿠키에 저장**됨  
 - 이후 요청마다 **sessionId가 자동 전송**되어 사용자를 인증함  
@@ -340,7 +318,7 @@ Set-Cookie: sessionId=abc123; HttpOnly; Secure; SameSite=Strict
 ---
 
 
-## **📌3. 토큰 기반 인증**  
+## **📌5. 토큰 기반 인증**  
 
 ### **✅ 토큰 기반 인증이란?**  
 - **서버가 사용자의 인증 상태를 유지하는 방법 중 하나**  
@@ -367,13 +345,13 @@ Set-Cookie: sessionId=abc123; HttpOnly; Secure; SameSite=Strict
 
 ---
 
-## **📌4. JWT (JSON Web Token)**
+## **📌6. JWT (JSON Web Token)**
 
-### ✅**4.1 JWT 개요**
+### ✅**6.1 JWT 개요**
 JWT는 **토큰 기반 인증 방식**으로, 로그인 후 발급된 JWT를 사용하여 인증을 수행하는 **Stateless 인증 방식**입니다.
 클라이언트가 로그인하면 JWT를 발급받고 이후 요청마다 JWT를 포함하여 인증 수행합니다.
 
-### ✅**4.2 JWT의 구성**
+### ✅**6.2 JWT의 구성**
 | 구성 요소 | 설명 | 예제 |
 |--------|------|------|
 | **헤더 (Header)** | 토큰의 유형 정보와 서명 알고리즘 암호화 방식 | JWT, HS256 |
@@ -404,14 +382,14 @@ JWT 표준에 정의된 클레임으로, 사용이 권장됨.
 ---
 
 
-### ✅**4.3 JWT 인증 과정**
+### ✅**6.3 JWT 인증 과정**
 1. **사용자가 로그인 요청** → 서버에서 JWT 생성 및 반환
 2. **클라이언트가 API 요청 시 JWT를 `Authorization` 헤더에 포함**
 3. **서버는 JWT 서명 검증 후 요청 처리**
 4. **(RSA 사용 시)** 개인키로 서명한 JWT를 공개키로 검증하여 신뢰성 보장  
 
 
-### ✅**4.4 JWT 서명 및 암호화 방식 (HMAC vs RSA)**
+### ✅**6.4 JWT 서명 및 암호화 방식 (HMAC vs RSA)**
 JWT의 서명 검증 방식은 **대칭 키(HMAC)와 비대칭 키(RSA, ECDSA)** 방식으로 구분됨.  
 
 #### 🔹 **대칭 키(Symmetric Key)**
@@ -441,14 +419,14 @@ JWT의 서명 검증 방식은 **대칭 키(HMAC)와 비대칭 키(RSA, ECDSA)**
 ---
 
 
-### ✅**4.5 JWT vs 세션 기반 인증 비교**
+### ✅**6.5 JWT vs 세션 기반 인증 비교**
 | 비교 항목 | JWT | 세션 기반 인증 |
 |----------|-----|---------------|
 | 저장 방식 | 클라이언트 (토큰 저장) | 서버 측 (세션 저장) |
 | 확장성 | 높음 (Stateless) | 낮음 (서버 부하 증가) |
 | 보안성 | 토큰 탈취 시 위험, 그러나 서명을 포함하면 변조를 방지할 수 있음 | 세션 하이재킹 위험 |
 
-### ✅**4.6 불투명 토큰(Opaque Token) vs JWT**
+### ✅**6.6 불투명 토큰(Opaque Token) vs JWT**
 | 비교 항목 | 불투명 토큰 (Opaque Token) | JWT |
 |----------|-----------------|------|
 | 저장 방식 | 서버에서 관리 | 클라이언트에서 관리 |
@@ -458,7 +436,7 @@ JWT의 서명 검증 방식은 **대칭 키(HMAC)와 비대칭 키(RSA, ECDSA)**
 
 ---
 
-### ✅**4.7 JWT 보안 취약점 및 해결 방법**
+### ✅**6.7 JWT 보안 취약점 및 해결 방법**
 1. **토큰 탈취 위험**  
    - JWT는 클라이언트에서 저장되므로 탈취되면 재사용될 위험이 있음.
    - 해결책: **JWT를 httpOnly 쿠키에 저장**하여 JavaScript에서 접근 불가능하게 설정.
@@ -476,13 +454,13 @@ JWT의 서명 검증 방식은 **대칭 키(HMAC)와 비대칭 키(RSA, ECDSA)**
    - 해결책: **필요한 최소한의 정보만 포함**.
 
 
-## **📌5. OAuth 2.0**
+## **📌7. OAuth 2.0**
 
-### **✅ 5.1 OAuth 2.0 개요**
+### **✅ 7.1 OAuth 2.0 개요**
 OAuth 2.0은 **사용자 인증 및 API 접근을 안전하게 처리하기 위한 표준 프로토콜**입니다.
 JWT와 불투명 토큰을 모두 사용할 수 있으며, **외부 서비스**(Google, Facebook, GitHub 등)와의 **인증 연동**에 주로 사용됩니다.
 
-### **✅ 5.2 OAuth 2.0의 핵심 개념**  
+### **✅ 7.2 OAuth 2.0의 핵심 개념**  
 
 **사용되는 대표적인 환경**
 - **Spring Security** (Java)
@@ -506,7 +484,7 @@ JWT와 불투명 토큰을 모두 사용할 수 있으며, **외부 서비스**(
 ---
 
 
-### **✅ 5.3 OAuth 2.0에서 사용하는 토큰**  
+### **✅ 7.3 OAuth 2.0에서 사용하는 토큰**  
 
 #### **1️⃣ OAuth 액세스 토큰 (Access Token)**
 - **역할:** API 요청을 인증하기 위한 토큰  
@@ -548,7 +526,7 @@ JWT와 불투명 토큰을 모두 사용할 수 있으며, **외부 서비스**(
 ---
 
 
-### **✅ 5.4 OAuth 2.0 인증 흐름**
+### **✅ 7.4 OAuth 2.0 인증 흐름**
 OAuth 2.0에는 다양한 인증 방식이 존재하지만, 가장 많이 사용되는 **Authorization Code Flow**를 기준으로 설명합니다.  
 
 **🔹 Authorization Code Flow**  
@@ -563,7 +541,7 @@ OAuth 2.0에는 다양한 인증 방식이 존재하지만, 가장 많이 사용
 
 ---
 
-### **✅ 5.5 OAuth 2.0 인증 방식 (Authorization Grant Types)**
+### **✅ 7.5 OAuth 2.0 인증 방식 (Authorization Grant Types)**
 OAuth 2.0에는 다양한 **권한 부여 방식(Grant Types)** 이 있으며, 각각의 방식은 사용 목적이 다릅니다.
 
 | 인증 방식 | 설명 | 사용 예제 |
@@ -587,7 +565,7 @@ OAuth 2.0에는 다양한 **권한 부여 방식(Grant Types)** 이 있으며, �
 
 ---
 
-### **✅ 5.6 OAuth 2.0에서 JWT와 불투명 토큰의 사용**
+### **✅ 7.6 OAuth 2.0에서 JWT와 불투명 토큰의 사용**
 OAuth 2.0에서는 **JWT와 불투명 토큰을 모두 사용할 수 있음**.  
 하지만, **어떤 환경에서 사용하는지에 따라 적합한 방식이 다름**.  
 
@@ -615,9 +593,9 @@ OAuth 2.0에서는 **JWT와 불투명 토큰을 모두 사용할 수 있음**.
 - **OAuth 2.0에서 JWT를 사용할 수도 있지만, 서버에서 직접 검증해야 하는 불투명 토큰이 기본적**  
 
 
-## 📌⚫ 6. 보안 강화 및 권한 부여
+## 📌 8. 보안 강화 및 권한 부여
 
-### ✅6.1 RBAC (Role-Based Access Control)
+### ✅8.1 RBAC (Role-Based Access Control)
 **사용자의 역할(Role)에 따라 접근 권한을 설정하는 방식**
 
 - 직장에서의 역할과 비슷합니다.
@@ -640,7 +618,7 @@ OAuth 2.0에서는 **JWT와 불투명 토큰을 모두 사용할 수 있음**.
 
 ---
 
-### ✅6.2 비밀번호 해싱 (BCrypt)
+### ✅8.2 비밀번호 해싱 (BCrypt)
 - Spring Security는 비밀번호를 안전하게 저장하기 위해 `BCryptPasswordEncoder`를 제공  
 ```java
 @Bean
@@ -663,7 +641,7 @@ public PasswordEncoder passwordEncoder() {
 
 ---
 
-### ✅6.3 CSRF/XSRF
+### ✅8.3 CSRF/XSRF
 **악성 웹사이트가 사용자의 계정을 몰래 이용하는 공격**
 
 - CSRF 공격 방지를 위해 Spring Security는 기본적으로 CSRF 보호 기능을 활성화  
@@ -687,7 +665,7 @@ http.csrf().disable();
 
 ---
 
-### ✅6.4 CORS 설정 (Cross-Origin Resource Sharing)
+### ✅8.4 CORS 설정 (Cross-Origin Resource Sharing)
 **다른 출처에서 API 호출을 허용하는 방법**
 - `@CrossOrigin` 애너테이션을 사용하여 설정 가능
 - 
@@ -712,7 +690,7 @@ http.csrf().disable();
 
 ---
 
-### ✅6.5 XSS (Cross-Site Scripting)
+### ✅8.5 XSS (Cross-Site Scripting)
 **웹사이트에 악성 스크립트를 삽입하여 사용자 정보를 훔치는 공격**
 - HTML 태그 삽입 공격을 방어하기 위해 input 값에 대한 검증 필요  
 - Spring Security에서 기본적으로 XSS 방어 기능 제공
@@ -739,7 +717,7 @@ http.headers().contentSecurityPolicy("script-src 'self'");
 
 ---
 
-## 🔖 용어 정리  
+## 9.🔖 용어 정리  
 - ### 🔹 BoilerPlateCode  
   특정 언어나 프레임워크에서 필수적으로 포함해야 하는 코드 구조  
   (반복적으로 동일하게 사용되는 코드, IDE, 템플릿 엔진 등을 통해 자동 생성되는 코드, 프레임워크나 라이브러리에서 기본 제공하는 설정 코드) 
@@ -759,7 +737,7 @@ http.headers().contentSecurityPolicy("script-src 'self'");
 
 ---
 
-## 📌 참고 및 출처
+## 10. 📌 참고 및 출처
 - 📖 [Modern API Development with Spring 6 and Spring Boot 3](https://github.com/PacktPublishing/Modern-API-Development-with-Spring-6-and-Spring-Boot-3)
 - 🔗 [Spring Security 공식 문서](https://docs.spring.io/spring-security/reference/servlet/architecture.html#servlet-security-filters)
 
