@@ -1,5 +1,48 @@
 # 🌐 Spring Security & JWT 정리
 
+🚀 **Spring Security & JWT 학습을 위한 체계적인 정리 문서**!
+
+## 🗂️ 목차
+
+1. [**Spring Security 개요**](#spring-security-개요)  
+   - [Spring Security란?](#11-spring-security란)  
+   - [요청 처리 흐름](#12-spring-security-요청-처리-흐름)  
+   - [인증(Authentication)과 인가(Authorization)](#-인증authentication과-인가authorization이란)  
+
+2. [**Spring Security 인증 과정**](#spring-security-인증-과정)  
+   - [기본적인 인증 과정](#21-기본적인-인증-과정)  
+   - [필터 체인 구조](#22-spring-security-필터-체인-구조)  
+   - [인증 방식에 따른 필터 체인 변화](#23-인증-방식에-따른-spring-security-필터-체인-구조의-변화)  
+
+3. [**세션 vs JWT vs OAuth 2.0**](#세션-vs-jwt-vs-oauth-20)  
+   - [쿠키 vs 세션](#-쿠키-vs-세션-비교)  
+   - [세션 기반 인증 vs JWT 인증](#-세션-vs-jwt-비교)  
+   - [JWT vs OAuth 2.0](#-토큰-인증-방식-비교-jwt-vs-oauth-20)  
+
+4. [**JWT (JSON Web Token)**](#jwt-json-web-token)  
+   - [JWT 개요 및 구조](#41-jwt-개요)  
+   - [JWT 서명 방식 (HMAC vs RSA)](#44-jwt-서명-및-암호화-방식-hmac-vs-rsa)  
+   - [JWT 보안 고려사항](#47-jwt-보안-취약점-및-해결-방법)  
+
+5. [**OAuth 2.0**](#oauth-20)  
+   - [OAuth 2.0 개념 및 핵심 요소](#52-oauth-20의-핵심-개념)  
+   - [액세스 토큰 vs 리프레시 토큰](#53-oauth-20에서-사용하는-토큰)  
+   - [OAuth 2.0 인증 흐름](#54-oauth-20-인증-흐름)  
+   - [OAuth 2.0에서 JWT와 불투명 토큰 비교](#56-oauth-20에서-jwt와-불투명-토큰의-사용)  
+
+6. [**보안 설정 및 강화**](#보안-설정-및-강화)  
+   - [RBAC (Role-Based Access Control)](#61-rbac-role-based-access-control)  
+   - [비밀번호 해싱 (BCrypt)](#62-비밀번호-해싱-bcrypt)  
+   - [CSRF/XSRF 방어](#63-csrfxsrf)  
+   - [CORS 설정](#64-cors-설정-cross-origin-resource-sharing)  
+   - [XSS 방어 (Content Security Policy)](#65-xss-cross-site-scripting)  
+
+7. [**부록 및 용어 정리**](#용어-정리)  
+   - [Boilerplate Code](#-boilerplatecode)  
+   - [Stateless 개념](#-stateless상태-없음-방식이란)  
+   - [주요 참고 자료 및 출처](#-참고-및-출처)  
+---
+
 ## 🎯 목적
 이 문서는 **Spring Security와 JWT**를 학습하며 정리한 내용을 담고 있습니다.
 
