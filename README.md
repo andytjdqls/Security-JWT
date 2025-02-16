@@ -3,7 +3,7 @@
 🚀 **Spring Security & JWT 학습을 위한 체계적인 정리 문서**!
 
 ## 🗂️ 목차
-
+0. [**요약 정리**](#-요약-정리)
 1. [**Spring Security 개요**](#-1-spring-security-개요)  
 2. [**Spring Security 인증 과정**](#-2-spring-security-인증-과정)  
 3. [**쿠키 vs 세션 vs JWT 인증**](#-3-쿠키cookie)  
@@ -15,10 +15,6 @@
 9. [**용어 정리**](#9-용어-정리)  
 10. [**참고 및 출처**](#10--참고-및-출처)  
 ---
-
-#6-jwt-json-web-token
-#7-oauth-20
-#9-용어-정리
 
 
 ## 🎯 목적
